@@ -1,0 +1,12 @@
+# Virtual environment
+.venv/
+
+# Jupyter auto-checkpoints
+.ipynb_checkpoints/
+
+# Byte-compiled / cache files
+__pycache__/
+*.pyc
+
+# OS cruft
+.DS_Store
