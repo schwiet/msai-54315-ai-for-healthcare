@@ -6,14 +6,15 @@ import matplotlib.pyplot as plt
 import os
 print("Current working directory:", os.getcwd())
 
-patients = pd.read_csv("../mimic-iii/PATIENTS.csv.gz")
-admissions = pd.read_csv("../mimic-iii/ADMISSIONS.csv.gz")
-transfers = pd.read_csv("../mimic-iii/TRANSFERS.csv.gz")
-procedures = pd.read_csv("../mimic-iii/PROCEDURES_ICD.csv.gz")
-d_procedures = pd.read_csv("../mimic-iii/D_ICD_PROCEDURES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
-diagnoses = pd.read_csv("../mimic-iii/DIAGNOSES_ICD.csv.gz")
-d_diagnoses = pd.read_csv("../mimic-iii/D_ICD_DIAGNOSES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
+patients = pd.read_csv("./mimic-iii/PATIENTS.csv.gz")
+admissions = pd.read_csv("./mimic-iii/ADMISSIONS.csv.gz")
+transfers = pd.read_csv("./mimic-iii/TRANSFERS.csv.gz")
+procedures = pd.read_csv("./mimic-iii/PROCEDURES_ICD.csv.gz")
+d_procedures = pd.read_csv("./mimic-iii/D_ICD_PROCEDURES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
+diagnoses = pd.read_csv("./mimic-iii/DIAGNOSES_ICD.csv.gz")
+d_diagnoses = pd.read_csv("./mimic-iii/D_ICD_DIAGNOSES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
 diag_map = dict(zip(d_diagnoses["ICD9_CODE"], d_diagnoses["SHORT_TITLE"]))
+icu_stays = pd.read_csv("./mimic-iii/ICUSTAYS.csv.gz")
 
 sns.countplot(data=admissions, x="ADMISSION_TYPE")
 plt.show()
@@ -254,3 +255,19 @@ def plot_comorbidity_matrix(matrix, type):
 
 plot_comorbidity_matrix(patient_mtx_full, "Patient")
 plot_comorbidity_matrix(admission_mtx_full, "Admission")
+
+##############################################
+# Events by day of year
+##############################################
+
+def daily_counts(df: pd.DataFrame, time_col: str) -> pd.Series:
+    """Count events per calendar date for a given timestamp column."""
+
+    counts = df[time_col].dropna().dt.normalize().value_counts().sort_index()
+    counts.index = pd.to_datetime(counts.index)
+    counts.name = time_col
+    return counts
+
+admission_daily_counts = daily_counts(admissions, "ADMITTIME")
+discharge_daily_counts = daily_counts(admissions, "DISCHTIME")
+icu_admission_daily_counts = daily_counts(icu_stays, "INTIME")
