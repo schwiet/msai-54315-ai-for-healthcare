@@ -61,6 +61,10 @@ plot_duration(admissions, "STAYTIME_HRS", "ADMISSION_TYPE")
 duration_by_admission_type(admissions)
 plot_duration(died_in_hospital, "STAYTIME_HRS", "ADMISSION_TYPE")
 
+##############################################
+# Age at Admission compared to Length of Stay
+##############################################
+
 # convert DOB to datetime
 patients["DOB"] = pd.to_datetime(patients["DOB"])
 # merge to get DOB
@@ -96,4 +100,23 @@ sns.scatterplot(
 plt.xlabel("Hospital Stay Duration (hours)")
 plt.ylabel("Age at Admission (years)")
 plt.title("Stay Duration vs. Age for Patients")
+plt.show()
+
+
+##############################################
+# Age at Admission compared to Death count
+##############################################
+adm_that_died = realistic_patients[realistic_patients["DEATHTIME"].notna()]
+
+plt.figure(figsize=(10,6))
+sns.histplot(
+        data=adm_that_died,
+        x="AGE_AT_ADMISSION",
+        hue="GENDER",
+        bins=70,
+        multiple="stack"
+    )
+plt.xlabel("Age at Admission (years)")
+plt.ylabel("Number of Deaths")
+plt.title("Histogram of Age at Admission for Deceased Patients")
 plt.show()
