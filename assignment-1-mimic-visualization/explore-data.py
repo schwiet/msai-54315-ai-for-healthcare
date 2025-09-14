@@ -6,9 +6,11 @@ import matplotlib.pyplot as plt
 import os
 print("Current working directory:", os.getcwd())
 
-patients = pd.read_csv("../mimic-iii/PATIENTS.csv.gz")
-admissions = pd.read_csv("../mimic-iii/ADMISSIONS.csv.gz")
-transfers = pd.read_csv("../mimic-iii/TRANSFERS.csv.gz")
+patients = pd.read_csv("./mimic-iii/PATIENTS.csv.gz")
+admissions = pd.read_csv("./mimic-iii/ADMISSIONS.csv.gz")
+transfers = pd.read_csv("./mimic-iii/TRANSFERS.csv.gz")
+procedures = pd.read_csv("./mimic-iii/PROCEDURES_ICD.csv.gz")
+d_procedures = pd.read_csv("./mimic-iii/D_ICD_PROCEDURES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
 
 admid1 = transfers[transfers["HADM_ID"] == 163281]
 
@@ -119,4 +121,43 @@ sns.histplot(
 plt.xlabel("Age at Admission (years)")
 plt.ylabel("Number of Deaths")
 plt.title("Histogram of Age at Admission for Deceased Patients")
+plt.show()
+
+##############################################
+# Procedures and Mortality Rates
+##############################################
+
+# drop duplicates from procedures table
+procedures = procedures.drop_duplicates(subset=["ICD9_CODE", "HADM_ID"])
+
+# merge procedures with admissions
+procedures_with_admissions = procedures.merge(admissions, on="HADM_ID", how="left")
+procedures_with_admissions["DIED"] = procedures_with_admissions["DEATHTIME"].notna()
+
+# compute mortality rates per procedure code.
+procedure_mortality_rates = (
+    procedures_with_admissions.groupby("ICD9_CODE").agg(
+        num_admissions=("HADM_ID", "count"),
+        num_deaths=("DIED", "sum"),
+    ).reset_index()
+)
+
+procedure_mortality_rates["mortality_rate"] = (
+    procedure_mortality_rates["num_deaths"] / procedure_mortality_rates["num_admissions"]
+)
+procedure_mortality_rates = procedure_mortality_rates.merge(d_procedures, on="ICD9_CODE", how="left")
+top_10_procs = procedure_mortality_rates.sort_values("num_admissions", ascending=False).head(10)
+
+plt.figure(figsize=(12,6))
+sns.barplot(
+    data=top_10_procs,
+    x="SHORT_TITLE",
+    y="mortality_rate",
+    palette="viridis"
+)
+
+plt.xlabel("ICD-9 Procedure Code")
+plt.ylabel("Mortality Rate")
+plt.title("Mortality Rate by Most Common Procedures")
+plt.xticks(rotation=45)
 plt.show()
