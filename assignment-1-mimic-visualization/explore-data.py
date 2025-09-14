@@ -60,3 +60,40 @@ admissions["STAYTIME_HRS"].describe()
 plot_duration(admissions, "STAYTIME_HRS", "ADMISSION_TYPE")
 duration_by_admission_type(admissions)
 plot_duration(died_in_hospital, "STAYTIME_HRS", "ADMISSION_TYPE")
+
+# convert DOB to datetime
+patients["DOB"] = pd.to_datetime(patients["DOB"])
+# merge to get DOB
+adm_with_age = admissions.merge(patients[["SUBJECT_ID", "DOB", "GENDER"]], on="SUBJECT_ID", how="left")
+
+# determine age at admission with steps to avoid int64 overflow
+
+# take just the date part (removes time-of-day; helps avoid tz/ns corner cases)
+admit_d = adm_with_age["ADMITTIME"].values.astype('datetime64[D]')
+dob_d   = adm_with_age["DOB"].values.astype('datetime64[D]')
+
+# day-precision age calculation (avoids ns overflow)
+# Note: result is a numpy timedelta in days; convert to float years
+age_days  = (admit_d - dob_d).astype('timedelta64[D]').astype('float')
+age_years = age_days / 365.25
+
+# age at admission (years)
+adm_with_age["AGE_AT_ADMISSION"] = age_years
+
+# filter out unrealistically old adults
+realistic_patients = adm_with_age[adm_with_age["AGE_AT_ADMISSION"] < 120]
+realistic_patients = realistic_patients[realistic_patients["AGE_AT_ADMISSION"] > 16]
+realistic_patients["AGE_AT_ADMISSION"].describe()
+
+plt.figure(figsize=(10,6))
+sns.scatterplot(
+    data=realistic_patients,
+    x="STAYTIME_HRS",
+    y="AGE_AT_ADMISSION",
+    hue="GENDER",
+    alpha=0.6
+)
+plt.xlabel("Hospital Stay Duration (hours)")
+plt.ylabel("Age at Admission (years)")
+plt.title("Stay Duration vs. Age for Patients")
+plt.show()
