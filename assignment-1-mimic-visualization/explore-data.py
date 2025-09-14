@@ -6,13 +6,14 @@ import matplotlib.pyplot as plt
 import os
 print("Current working directory:", os.getcwd())
 
-patients = pd.read_csv("./mimic-iii/PATIENTS.csv.gz")
-admissions = pd.read_csv("./mimic-iii/ADMISSIONS.csv.gz")
-transfers = pd.read_csv("./mimic-iii/TRANSFERS.csv.gz")
-procedures = pd.read_csv("./mimic-iii/PROCEDURES_ICD.csv.gz")
-d_procedures = pd.read_csv("./mimic-iii/D_ICD_PROCEDURES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
-
-admid1 = transfers[transfers["HADM_ID"] == 163281]
+patients = pd.read_csv("../mimic-iii/PATIENTS.csv.gz")
+admissions = pd.read_csv("../mimic-iii/ADMISSIONS.csv.gz")
+transfers = pd.read_csv("../mimic-iii/TRANSFERS.csv.gz")
+procedures = pd.read_csv("../mimic-iii/PROCEDURES_ICD.csv.gz")
+d_procedures = pd.read_csv("../mimic-iii/D_ICD_PROCEDURES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
+diagnoses = pd.read_csv("../mimic-iii/DIAGNOSES_ICD.csv.gz")
+d_diagnoses = pd.read_csv("../mimic-iii/D_ICD_DIAGNOSES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
+diag_map = dict(zip(d_diagnoses["ICD9_CODE"], d_diagnoses["SHORT_TITLE"]))
 
 sns.countplot(data=admissions, x="ADMISSION_TYPE")
 plt.show()
@@ -161,3 +162,95 @@ plt.ylabel("Mortality Rate")
 plt.title("Mortality Rate by Most Common Procedures")
 plt.xticks(rotation=45)
 plt.show()
+
+
+##############################################
+# Diagnoses Cooccurrence
+##############################################
+
+from itertools import combinations
+from collections import Counter
+
+diagnoses = diagnoses.dropna(subset=["ICD9_CODE"])
+code_counts = diagnoses["ICD9_CODE"].value_counts()
+
+def compute_comorbidity_occurrences(data, group_col):
+    # creates an empty counter that will hold pairs of diagnoses as keys and how
+    # many patients had them as values.
+    pairs = Counter()
+
+    # group is the sub-dataframe of all rows (all diagnoses) for a single
+    # column.
+    for _, group in data.groupby(group_col):
+        # pull just the ICD9 codes for this column.
+        # .unique() ensures we don’t count duplicates if the same code was assigned
+        # multiple times for that column.
+        codes = group["ICD9_CODE"].unique()
+
+        # skip columns with only one diagnosis
+        if len(codes) <= 1:
+            continue
+
+        # produce all unique pairs of diagnoses for this column
+        # sorted() ensures consistent ordering of pairs, so (A, B) and (B, A)
+        # are counted as the same pair.
+        for c1, c2 in combinations(sorted(codes), 2):
+            pairs[(c1, c2)] += 1
+
+    # convert to dataframe
+    df_pairs = pd.DataFrame(
+        [(c1, c2, count) for (c1, c2), count in pairs.items()],
+        columns=["code1", "code2", "co_occurrence"]
+    )
+
+    # add short titles for readability
+    df_pairs = df_pairs.merge(d_diagnoses, left_on="code1", right_on="ICD9_CODE", how="left")
+    df_pairs = df_pairs.rename(columns={"SHORT_TITLE": "label1"}).drop(columns="ICD9_CODE")
+
+    df_pairs = df_pairs.merge(d_diagnoses, left_on="code2", right_on="ICD9_CODE", how="left")
+    df_pairs = df_pairs.rename(columns={"SHORT_TITLE": "label2"}).drop(columns="ICD9_CODE")
+
+    return df_pairs
+
+patient_comorbidities = compute_comorbidity_occurrences(diagnoses, "SUBJECT_ID")
+admission_comorbidities = compute_comorbidity_occurrences(diagnoses, "HADM_ID")
+
+def get_codes_with_most_occurrences(data, count=20):
+    dict_codes = {}
+
+    for _, row in data.iterrows():
+        if row["code1"] not in dict_codes:
+            dict_codes[row["code1"]] = 0
+        if row["code2"] not in dict_codes:
+            dict_codes[row["code2"]] = 0
+        dict_codes[row["code1"]] += row["co_occurrence"]
+        dict_codes[row["code2"]] += row["co_occurrence"]
+
+    return pd.Series(dict_codes).sort_values(ascending=False).head(count).index
+
+
+def make_matrix(data, count=20):
+    common_codes = get_codes_with_most_occurrences(data, count)
+    common_diagnoses = data[
+        data["code1"].isin(common_codes) & data["code2"].isin(common_codes)
+    ]
+
+    matrix = common_diagnoses.pivot(index="code1", columns="code2", values="co_occurrence").fillna(0)
+
+    # Symmetrize (so both upper/lower triangles filled)
+    matrix_full = matrix.add(matrix.T, fill_value=0).fillna(0)
+
+    matrix_labeled = matrix_full.rename(index=diag_map, columns=diag_map)
+    return matrix_labeled
+
+patient_mtx_full = make_matrix(patient_comorbidities, 20)
+admission_mtx_full = make_matrix(admission_comorbidities, 20)
+
+def plot_comorbidity_matrix(matrix, type):
+    plt.figure(figsize=(12,10))
+    sns.heatmap(matrix, cmap="Reds", square=True, cbar=True)
+    plt.title(f"{type} level ICD-9 Co-occurrence Matrix")
+    plt.show()
+
+plot_comorbidity_matrix(patient_mtx_full, "Patient")
+plot_comorbidity_matrix(admission_mtx_full, "Admission")
