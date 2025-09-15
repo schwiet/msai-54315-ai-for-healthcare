@@ -256,6 +256,18 @@ def plot_comorbidity_matrix(matrix, type):
 plot_comorbidity_matrix(patient_mtx_full, "Patient")
 plot_comorbidity_matrix(admission_mtx_full, "Admission")
 
+import networkx as nx
+
+G = nx.from_pandas_edgelist(patient_comorbidities.head(100), 'label1', 'label2', edge_attr='co_occurrence')
+
+plt.figure(figsize=(10,24))
+pos = nx.spring_layout(G, k=0.15, iterations=20)
+nx.draw_networkx_nodes(G, pos, node_size=30, alpha=0.7)
+nx.draw_networkx_edges(G, pos, alpha=0.2)
+nx.draw_networkx_labels(G, pos, font_size=12)
+plt.title("Patient-level Comorbidity Network (ICD-9)")
+plt.show()
+
 ##############################################
 # Events by time of day
 ##############################################
