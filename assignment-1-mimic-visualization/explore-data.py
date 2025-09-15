@@ -6,15 +6,15 @@ import matplotlib.pyplot as plt
 import os
 print("Current working directory:", os.getcwd())
 
-patients = pd.read_csv("./mimic-iii/PATIENTS.csv.gz")
-admissions = pd.read_csv("./mimic-iii/ADMISSIONS.csv.gz")
-transfers = pd.read_csv("./mimic-iii/TRANSFERS.csv.gz")
-procedures = pd.read_csv("./mimic-iii/PROCEDURES_ICD.csv.gz")
-d_procedures = pd.read_csv("./mimic-iii/D_ICD_PROCEDURES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
-diagnoses = pd.read_csv("./mimic-iii/DIAGNOSES_ICD.csv.gz")
-d_diagnoses = pd.read_csv("./mimic-iii/D_ICD_DIAGNOSES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
+patients = pd.read_csv("../mimic-iii/PATIENTS.csv.gz")
+admissions = pd.read_csv("../mimic-iii/ADMISSIONS.csv.gz")
+transfers = pd.read_csv("../mimic-iii/TRANSFERS.csv.gz")
+procedures = pd.read_csv("../mimic-iii/PROCEDURES_ICD.csv.gz")
+d_procedures = pd.read_csv("../mimic-iii/D_ICD_PROCEDURES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
+diagnoses = pd.read_csv("../mimic-iii/DIAGNOSES_ICD.csv.gz")
+d_diagnoses = pd.read_csv("../mimic-iii/D_ICD_DIAGNOSES.csv.gz", usecols=["ICD9_CODE", "SHORT_TITLE"])
 diag_map = dict(zip(d_diagnoses["ICD9_CODE"], d_diagnoses["SHORT_TITLE"]))
-icu_stays = pd.read_csv("./mimic-iii/ICUSTAYS.csv.gz")
+icu_stays = pd.read_csv("../mimic-iii/ICUSTAYS.csv.gz")
 
 sns.countplot(data=admissions, x="ADMISSION_TYPE")
 plt.show()
@@ -257,64 +257,33 @@ plot_comorbidity_matrix(patient_mtx_full, "Patient")
 plot_comorbidity_matrix(admission_mtx_full, "Admission")
 
 ##############################################
-# Events by day of year
+# Events by time of day
 ##############################################
+admissions['ADMITTIME_HOUR'] = admissions["ADMITTIME"].dt.hour
+admissions['DISCHTIME_HOUR'] = admissions["DISCHTIME"].dt.hour
+
 icu_stays["INTIME"] = pd.to_datetime(icu_stays["INTIME"])
 icu_stays["OUTTIME"] = pd.to_datetime(icu_stays["OUTTIME"])
 
-def daily_counts(df: pd.DataFrame, time_col: str) -> pd.Series:
-    """Count events per calendar date for a given timestamp column."""
+icu_stays['INTIME_HOUR'] = icu_stays["INTIME"].dt.hour
+icu_stays['OUTTIME_HOUR'] = icu_stays["OUTTIME"].dt.hour
 
-    counts = df[time_col].dropna().dt.normalize().value_counts().sort_index()
-    counts.index = pd.to_datetime(counts.index)
-    counts.name = time_col
-    return counts
+def plot_admissions_by_hour(data, time_col, hue_col, label):
+    sns.kdeplot(data, x=time_col, hue=hue_col, fill=True)
+    plt.xlabel("Hour of Day")
+    plt.ylabel(f"Distribution of {label}")
+    plt.title(f"{label} by Hour of Day")
+    plt.xlim(0, 24)
 
-def collapse_to_day_of_year(series: pd.Series) -> pd.Series:
-    """Collapse across years to day-of-year using month-day keys."""
+plt.figure(figsize=(10,24))
+plt.subplot(4, 1, 1)
+plot_admissions_by_hour(admissions, "ADMITTIME_HOUR", "ADMISSION_LOCATION", "Admissions")
+plt.subplot(4, 1, 2)
+plot_admissions_by_hour(admissions, "DISCHTIME_HOUR", "DISCHARGE_LOCATION", "Discharges")
+plt.subplot(4, 1, 3)
+plot_admissions_by_hour(icu_stays, "INTIME_HOUR", "FIRST_CAREUNIT", "ICU Admissions")
+plt.subplot(4, 1, 4)
+plot_admissions_by_hour(icu_stays, "OUTTIME_HOUR", "LAST_CAREUNIT", "ICU Discharges")
 
-    df = series.rename("count").to_frame()
-    df["mmdd"] = df.index.strftime("%m-%d")
-    by_mmdd = df.groupby("mmdd")["count"].sum().sort_index()
-    return by_mmdd
-
-def collapse_to_weekday(series: pd.Series) -> pd.Series:
-    """Collapse across years to weekday (0=Mon ... 6=Sun)."""
-    df = series.rename("count").to_frame()
-    df["weekday"] = df.index.dayofweek
-    by_wd = df.groupby("weekday")["count"].sum()
-    return by_wd
-
-admission_daily_counts = daily_counts(admissions, "ADMITTIME")
-discharge_daily_counts = daily_counts(admissions, "DISCHTIME")
-icu_admission_daily_counts = daily_counts(icu_stays, "INTIME")
-icu_discharge_daily_counts = daily_counts(icu_stays, "OUTTIME")
-
-doy ={
-    "Admission": collapse_to_weekday(admission_daily_counts),
-    "Discharge": collapse_to_weekday(discharge_daily_counts),
-    "ICU Admission": collapse_to_weekday(icu_admission_daily_counts),
-    "ICU Discharge": collapse_to_weekday(icu_discharge_daily_counts),
-}
-
-aligned = pd.DataFrame(doy).fillna(0)
-smoothed = aligned.rolling(window=7, min_periods=1, center=True).mean()
-
-# ---- Plot
-plt.figure(figsize=(12, 6))
-x = range(len(smoothed))  # 365 or 366 depending on data
-for col in smoothed.columns:
-    y = smoothed[col].values
-    plt.plot(x, y, label=col, linewidth=2)
-    plt.fill_between(x, 0, y, alpha=0.15)
-
-# niceties: month ticks
-mmdd = smoothed.index
-month_starts = [i for i, d in enumerate(mmdd) if d.endswith("-01")]
-month_labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][:len(month_starts)]
-plt.xticks(month_starts, month_labels)
-plt.ylabel("Events per day (summed across years)")
-plt.title("MIMIC-III: Overlapping event counts by day-of-year")
-plt.legend()
 plt.tight_layout()
 plt.show()
