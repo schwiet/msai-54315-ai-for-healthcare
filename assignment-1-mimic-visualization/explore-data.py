@@ -260,7 +260,7 @@ import networkx as nx
 
 G = nx.from_pandas_edgelist(patient_comorbidities.head(100), 'label1', 'label2', edge_attr='co_occurrence')
 
-plt.figure(figsize=(10,24))
+plt.figure(figsize=(24,10))
 pos = nx.spring_layout(G, k=0.15, iterations=20)
 nx.draw_networkx_nodes(G, pos, node_size=30, alpha=0.7)
 nx.draw_networkx_edges(G, pos, alpha=0.2)
@@ -287,14 +287,19 @@ def plot_admissions_by_hour(data, time_col, hue_col, label):
     plt.title(f"{label} by Hour of Day")
     plt.xlim(0, 24)
 
-plt.figure(figsize=(10,24))
-plt.subplot(4, 1, 1)
+plt.figure(figsize=(24,10))
+plt.subplot(1, 2, 1)
 plot_admissions_by_hour(admissions, "ADMITTIME_HOUR", "ADMISSION_LOCATION", "Admissions")
-plt.subplot(4, 1, 2)
+plt.subplot(1, 2, 2)
 plot_admissions_by_hour(admissions, "DISCHTIME_HOUR", "DISCHARGE_LOCATION", "Discharges")
-plt.subplot(4, 1, 3)
+
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(24,10))
+plt.subplot(1, 2, 1)
 plot_admissions_by_hour(icu_stays, "INTIME_HOUR", "FIRST_CAREUNIT", "ICU Admissions")
-plt.subplot(4, 1, 4)
+plt.subplot(1, 2, 2)
 plot_admissions_by_hour(icu_stays, "OUTTIME_HOUR", "LAST_CAREUNIT", "ICU Discharges")
 
 plt.tight_layout()
