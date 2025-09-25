@@ -43,6 +43,8 @@ Slide Deck of 10 Queries
 
 ### Meaning
 
+This basic query of the patient table selects a few of the table's columns, including: `DOB`, `DOD`, `GENDER` and the table's primary key `SUBJECT_ID`. It also derives a new column, `BIRTH_YEAR` from the `DOB` column. Results are ordered by the derived `BIRTH_YEAR`.
+
 ### SQL Query
 
 ```
@@ -50,9 +52,13 @@ SELECT
   `DOB`,
   `DOD`,
   `GENDER`,
-  `SUBJECT_ID`
+  `SUBJECT_ID`,
+  EXTRACT(YEAR FROM DOB) AS BIRTH_YEAR
 FROM
-  `physionet-data.mimiciii_clinical.patients` ;
+  `physionet-data.mimiciii_clinical.patients`
+ORDER BY BIRTH_YEAR;
 ```
 
 ### Interpretation of Results
+
+The query returns a row for each of the patients in the table. The rows are sorted by birth year in ascending order. Each patiet row includes: date of birth, date of death, gender, the patient's subject ID and the year of their birth.
