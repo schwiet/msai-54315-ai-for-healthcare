@@ -41,7 +41,7 @@ Slide Deck of 10 Queries
 
 ## Query 1 - Basic Patient Info
 
-### Meaning
+### Description
 
 This basic query of the patient table selects a few of the table's columns, including: `DOB`, `DOD`, `GENDER` and the table's primary key `SUBJECT_ID`. It also derives a new column, `BIRTH_YEAR` from the `DOB` column. Results are ordered by the derived `BIRTH_YEAR`.
 
@@ -62,3 +62,31 @@ ORDER BY BIRTH_YEAR;
 ### Interpretation of Results
 
 The query returns a row for each of the patients in the table. The rows are sorted by birth year in ascending order. Each patiet row includes: date of birth, date of death, gender, the patient's subject ID and the year of their birth.
+
+## Query 2 – Admissions by Year of Birth
+
+### Description
+
+This query counts the number of admissions for patients of each birth year present in the data. It combines the Patients table with the Admissions table to retrieve the DOB for each admission record's patient. Similar to the previous query, year of birth is derived then used to group rows to create a count of admissions for each birth year.
+
+### SQL Query
+
+```
+SELECT
+  EXTRACT(YEAR FROM Patients.DOB) AS BIRTH_YEAR,
+  COUNT(Admissions.HADM_ID) AS admission_count
+FROM
+  `physionet-data.mimiciii_clinical.patients` AS Patients
+JOIN
+  `physionet-data.mimiciii_clinical.admissions` AS Admissions
+ON
+  Patients.SUBJECT_ID = Admissions.SUBJECT_ID
+GROUP BY
+  BIRTH_YEAR
+ORDER BY
+  BIRTH_YEAR;
+```
+
+### Interpretation of Results
+
+The results list each of the birth years present in the joined table, from 1800 to 2201 in ascending order, accompanied by the number of admissions in the table for patients with that rows' birth year.
