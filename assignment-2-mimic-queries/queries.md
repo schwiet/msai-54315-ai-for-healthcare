@@ -90,3 +90,112 @@ ORDER BY
 ### Interpretation of Results
 
 The results list each of the birth years present in the joined table, from 1800 to 2201 in ascending order, accompanied by the number of admissions in the table for patients with that rows' birth year.
+
+> **NOTE**: There is a conspicuous jump between `1901` and `2012` likely explained by the age shift to comply with HIPAA for patients older than 89.
+
+## Query 3 - Admissions by Age
+
+### Description
+
+This query counts the number of admissions for patients of each age present in the data. It also combines the Patients table with the Admissions table to determine the difference between the admission time and DOB.
+
+### SQL Query
+
+```
+SELECT
+  DATE_DIFF(DATE(Admissions.ADMITTIME), DATE(Patients.DOB), YEAR) AS AGE_AT_ADMISSION,
+  COUNT(Admissions.HADM_ID) AS admission_count
+FROM
+  `physionet-data.mimiciii_clinical.patients` AS Patients
+JOIN
+  `physionet-data.mimiciii_clinical.admissions` AS Admissions
+ON
+  Patients.SUBJECT_ID = Admissions.SUBJECT_ID
+GROUP BY
+  AGE_AT_ADMISSION
+ORDER BY
+  AGE_AT_ADMISSION;
+```
+
+### Interpretation of Results
+
+The results list a row for each age at time of admission present in the joined table, in ascending order. Each age includes a tally for how many admissions occur in the Admissions table for patients of the row's age.
+
+> **NOTE**: There are many admissions for ages above `300`, explained by the age shift to comply with HIPAA for patients older than 89. 
+
+## Query 4 - Confirming Shifted Year of Birth Cohort
+
+### Description
+
+Based on the results of the previous two queries, it appears that any patient with a birth year before `2012` has had their age shifted. This query intends to confirm this assumption by counting the number of patients with a birth year before `2012` who are determined to be less than `300` years old at admission time.
+
+### SQL Query
+
+```
+WITH SuspectedShiftPatients AS(
+  SELECT
+    SUBJECT_ID,
+    DOB,
+  FROM `physionet-data.mimiciii_clinical.patients`
+  WHERE
+    EXTRACT(YEAR FROM DOB) < 2012
+)
+SELECT
+  COUNT(Admissions.HADM_ID) AS ADMISSION_COUNT
+FROM
+  SuspectedShiftPatients
+JOIN
+  `physionet-data.mimiciii_clinical.admissions` AS Admissions
+ON
+  SuspectedShiftPatients.SUBJECT_ID = Admissions.SUBJECT_ID
+WHERE DATE_DIFF(DATE(Admissions.ADMITTIME), DATE(SuspectedShiftPatients.DOB), YEAR) < 300;
+```
+
+### Interpretation of Results
+
+The result is `0`, confirming that all of the patients with birth years prior to `2012` have had their birth year shifted and were thus older than `89` at some point in the dataset. We cannot accurately determine their age because of this shift, we can only say they were older than `89`.
+
+## Query 5 - ICU Stay time by Age Group
+
+### Description
+
+This query combines the Patient, Admissions and ICUStays tables to continue to analyze the relationship of a patients age with other data in the dataset. In this case, ages are categorized into somewhat arbitrary age groups which are then used to compare each stay time (in days) by age group.
+
+### SQL Query
+
+```
+WITH ICU_Admissions AS(
+  SELECT
+    Patients.SUBJECT_ID,
+    Admissions.HADM_ID,
+    ICU_Stays.INTIME,
+    ICU_Stays.OUTTIME,
+    DATE_DIFF(DATE(Admissions.ADMITTIME), DATE(Patients.DOB), YEAR) AS AGE_AT_ADMISSION,
+  FROM
+    `physionet-data.mimiciii_clinical.patients` Patients
+  JOIN
+    `physionet-data.mimiciii_clinical.admissions` Admissions USING(SUBJECT_ID)
+  JOIN
+    `physionet-data.mimiciii_clinical.icustays` ICU_Stays USING (SUBJECT_ID, HADM_ID)
+)
+SELECT
+  TIMESTAMP_DIFF(OUTTIME, INTIME, DAY) AS STAY_DAYS,
+  CASE
+    WHEN AGE_AT_ADMISSION < 1 THEN 'Neonate (<1)'
+    WHEN AGE_AT_ADMISSION BETWEEN 1 AND 24 THEN 'Youth (<25)'
+    WHEN AGE_AT_ADMISSION BETWEEN 25 AND 64 THEN 'Adult (26-64)'
+    ELSE 'Senior (65+)'
+  END AS AGE_GROUP,
+  COUNT(DISTINCT HADM_ID) AS ADMISSION_COUNT
+FROM
+  ICU_Admissions
+GROUP BY
+  STAY_DAYS,
+  AGE_GROUP
+ORDER BY
+  STAY_DAYS;
+```
+
+### Interpretation of Results
+
+For each stay duration calculated in the data set (range [0,173]), there are four rows containing the counts of stays of that duration for each of the age group categories.
