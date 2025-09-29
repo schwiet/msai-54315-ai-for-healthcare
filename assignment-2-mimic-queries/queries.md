@@ -190,7 +190,7 @@ GROUP BY
 
 ### Interpretation of Results
 
-> ***TODO***
+There is a row for each of the age groups with a count of the number of admissions in the dataset for patients of that age range.
 
 ## Query 6 – Number of ICU Stays per Age Group
 
@@ -236,7 +236,7 @@ ORDER BY
 
 ### Interpretation of Results
 
-> ***TODO***
+There is a row for each of the age groups with a count of the number of ICU stays in the dataset for patients of that age range.
 
 ### Query 7 – ICU Stays per Admission by Age Group
 
