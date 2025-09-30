@@ -61,7 +61,7 @@ ORDER BY BIRTH_YEAR;
 
 ### Interpretation of Results
 
-The query returns a row for each of the patients in the table. The rows are sorted by birth year in ascending order. Each patiet row includes: date of birth, date of death, gender, the patient's subject ID and the year of their birth.
+The query returns a row for each of the patients in the table. The rows are sorted by birth year in ascending order. Each patient row includes: date of birth, date of death, gender, the patient's subject ID and the year of their birth.
 
 ## Query 2 – Admissions by Year of Birth
 
