@@ -44,7 +44,8 @@ nlp_sci_md = spacy.load("en_core_sci_md")
 
 # grab a set of text samples from the filtered notes
 NER_N = min(1000, len(df_diag_notes))
-text_samples = df_diag_notes["TEXT"].head(NER_N).tolist()
+# text_samples = df_diag_notes["TEXT"].head(NER_N).tolist()
+text_samples = df_diag_notes["TEXT"].tolist()
 
 ###############################################################################
 # 1 - extracted entities
@@ -81,10 +82,8 @@ def get_corpus(docs):
     for doc in docs:
         ents = []
         for ent in doc.ents:
-            # normalize entity string -> lowercase, keep only letters/spaces,
-            # replace spaces with underscores
-            e = re.sub(r"[^a-zA-Z\s]", " ", ent.text.lower()).strip()
-            e = re.sub(r"\s+", "_", e)
+            # normalize entity string -> lowercase, keep only letters/digits/spaces,
+            e = re.sub(r"[^a-zA-Z0-9\s]", " ", ent.text.lower()).strip()
             if len(e) > 2:
                 ents.append(e)
         corpus.append(ents)
@@ -95,3 +94,59 @@ corpus_sci = get_corpus(ents_sci)
 
 print(len(corpus_gen[0]))
 print(len(corpus_sci[0]))
+
+from gensim.models import Word2Vec
+model_gen = Word2Vec(corpus_gen, vector_size=100, window=5, min_count=1, workers=4)
+model_sci = Word2Vec(corpus_sci, vector_size=100, window=5, min_count=1, workers=4)
+
+model_gen.wv.most_similar("asthma")
+model_sci.wv.most_similar("asthma")
+
+###############################################################################
+# 3 - t-SNE
+###############################################################################
+
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+import numpy as np
+
+def tsne_plot(model,words, showLabels=True, preTrained=False):
+    "Creates and TSNE model and plots it"
+    labels = []
+    tokens = []
+
+    for word in words:
+      if preTrained:
+          tokens.append(model[word])
+      else:
+          tokens.append(model.wv[word])
+      if showLabels:
+        labels.append(word)
+
+    tokens = np.array(tokens)
+    tsne_model = TSNE(perplexity=30, early_exaggeration=12, n_components=2, init='pca', n_iter=1000, random_state=23)
+    new_values = tsne_model.fit_transform(tokens)
+
+    x = []
+    y = []
+    for value in new_values:
+        x.append(value[0])
+        y.append(value[1])
+
+    plt.figure(figsize=(16, 16))
+    for i in range(len(x)):
+        plt.scatter(x[i],y[i])
+        if showLabels:
+            plt.annotate(labels[i],
+                        xy=(x[i], y[i]),
+                        xytext=(5, 2),
+                        textcoords='offset points',
+                        ha='right',
+                        va='bottom')
+    plt.show()
+
+gen_vocabs = model_gen.wv.key_to_index.keys()
+tsne_plot(model_gen,gen_vocabs, showLabels=False)
+
+sci_vocabs = model_sci.wv.key_to_index.keys()
+tsne_plot(model_sci,sci_vocabs, showLabels=False)
