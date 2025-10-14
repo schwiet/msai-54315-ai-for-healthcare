@@ -140,3 +140,56 @@ tsne_plot(model_gen,gen_vocabs, showLabels=True, xlim=(-5,5), ylim=(0,10))
 sci_vocabs = model_sci.wv.key_to_index.keys()
 tsne_plot(model_sci,sci_vocabs, showLabels=False)
 tsne_plot(model_sci,sci_vocabs, showLabels=True, xlim=(35,45), ylim=(-42,-32))
+
+###############################################################################
+# Bonus
+###############################################################################
+
+from transformers import pipeline
+
+# create a biomedical NER pipeline
+# d4data/biomedical-ner-all is a solid, general biomedical NER model
+ner_pipe = pipeline(
+    "ner",
+    model="d4data/biomedical-ner-all",
+    aggregation_strategy="simple",  # groups wordpieces
+    device=-1                       # CPU
+)
+
+# batch-run NER on text samples
+def extract_ents_hf(texts, batch_size=16):
+    """
+    Returns list of "docs", where each doc mimics spaCy-ish .ents as a list of dicts:
+      {"text": "...", "label_": "..."}
+    """
+    docs = []
+    for i in tqdm(range(0, len(texts), batch_size), desc="NER (HF biomedical)"):
+        batch = texts[i:i+batch_size]
+        # transformers pipeline supports list input directly
+        outputs = ner_pipe(batch)
+        # outputs is a list per input text
+        for ents in outputs:
+            docs.append([{"text": e["word"], "label_": e["entity_group"]} for e in ents])
+    return docs
+
+ents_hf = extract_ents_hf(text_samples)
+
+def get_corpus_from_hf(docs):
+    corpus = []
+    for ents in docs:
+        toks = []
+        for e in ents:
+            t = re.sub(r"[^a-z0-9\s]", " ", e["text"].lower()).strip()
+            if len(t) > 2:
+                toks.append(t)
+        corpus.append(toks)
+    return corpus
+
+corpus_hf = get_corpus_from_hf(ents_hf)
+
+# train Word2Vec and plot
+model_hf = Word2Vec(corpus_hf, vector_size=100, window=5, min_count=1, workers=4)
+
+hf_vocabs = model_hf.wv.key_to_index.keys()
+tsne_plot(model_hf, hf_vocabs, showLabels=False)
+tsne_plot(model_hf, hf_vocabs, showLabels=True, xlim=(-40,-30), ylim=(-5,5))

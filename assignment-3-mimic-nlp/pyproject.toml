@@ -17,7 +17,9 @@ dependencies = [
     "pyarrow>=21.0.0",
     "scikit-learn==1.*",
     "spacy==3.7.*",
+    "torch>=2.8.0",
     "tqdm>=4.67.1",
+    "transformers>=4.44",
 ]
 
 [project.scripts]
