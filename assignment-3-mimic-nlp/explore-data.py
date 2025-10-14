@@ -110,43 +110,33 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import numpy as np
 
-def tsne_plot(model,words, showLabels=True, preTrained=False):
-    "Creates and TSNE model and plots it"
-    labels = []
-    tokens = []
-
-    for word in words:
-      if preTrained:
-          tokens.append(model[word])
-      else:
-          tokens.append(model.wv[word])
-      if showLabels:
-        labels.append(word)
+def tsne_plot(model, words, showLabels=True, preTrained=False, xlim=None, ylim=None):
+    labels, tokens = [], []
+    for w in words:
+        tokens.append(model[w] if preTrained else model.wv[w])
+        if showLabels: labels.append(w)
 
     tokens = np.array(tokens)
-    tsne_model = TSNE(perplexity=30, early_exaggeration=12, n_components=2, init='pca', n_iter=1000, random_state=23)
+    tsne_model = TSNE(perplexity=30, early_exaggeration=12, n_components=2,
+                      init='pca', n_iter=1000, random_state=23)
     new_values = tsne_model.fit_transform(tokens)
 
-    x = []
-    y = []
-    for value in new_values:
-        x.append(value[0])
-        y.append(value[1])
+    x, y = new_values[:,0], new_values[:,1]
+    plt.figure(figsize=(16,16))
+    plt.scatter(x, y, s=8)
+    if showLabels:
+        for i, lab in enumerate(labels):
+            plt.annotate(lab, (x[i], y[i]), xytext=(5,2), textcoords='offset points',
+                         ha='right', va='bottom')
 
-    plt.figure(figsize=(16, 16))
-    for i in range(len(x)):
-        plt.scatter(x[i],y[i])
-        if showLabels:
-            plt.annotate(labels[i],
-                        xy=(x[i], y[i]),
-                        xytext=(5, 2),
-                        textcoords='offset points',
-                        ha='right',
-                        va='bottom')
+    if xlim is not None: plt.xlim(*xlim)
+    if ylim is not None: plt.ylim(*ylim)
     plt.show()
 
 gen_vocabs = model_gen.wv.key_to_index.keys()
 tsne_plot(model_gen,gen_vocabs, showLabels=False)
+tsne_plot(model_gen,gen_vocabs, showLabels=True, xlim=(-5,5), ylim=(0,10))
 
 sci_vocabs = model_sci.wv.key_to_index.keys()
 tsne_plot(model_sci,sci_vocabs, showLabels=False)
+tsne_plot(model_sci,sci_vocabs, showLabels=True, xlim=(35,45), ylim=(-42,-32))
