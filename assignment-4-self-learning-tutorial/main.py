@@ -29,31 +29,6 @@ diagnoses = pd.read_csv(
   usecols=['SUBJECT_ID','HADM_ID','ICD9_CODE'])
 d_diag = pd.read_csv('../mimic-iii/D_ICD_DIAGNOSES.csv.gz')
 
-# determine which labs to evaluate.
-#####
-# To increase the sample size to include those who _should_ be tested for
-# diabetes (i.e. those who are at risk due to high A1C), we want to apply a
-# positive label even to undiagnosed patients if their labs indicate elevated
-# risk.
-
-glucose_related_labs = d_labitems[
-  d_labitems['LABEL'].str.contains('glucose', case=False, na=False) &
-  d_labitems['FLUID'].str.contains('blood|plasma|serum', case=False, na=False)
-]
-glucose_related_labs.head()
-
-a1c_related_labs = d_labitems[
-  d_labitems['LABEL'].str.contains(
-    'a1c|hba1c|glycohemoglobin',
-    case=False,
-    na=False)
-]
-a1c_related_labs.head()
-
-lab_list = glucose_related_labs['ITEMID'].tolist()
-for i in a1c_related_labs['ITEMID'].tolist():
-  lab_list.append(i)
-print(lab_list)
 
 #####
 # get the first admission for each patient
@@ -78,4 +53,45 @@ diag_labeled = diagnoses.merge(d_diag, on='ICD9_CODE', how='left')
 diagnoses.head()
 # verify
 
-diag_labeled[diag_labeled['is_diabetes'] == True]
+diab_related = diag_labeled[diag_labeled['is_diabetes'] == True]
+
+# get a cohort of patients with a diabetes-related diagnosis
+cohort_diab = diab_related['SUBJECT_ID'].unique()
+cohort_diab.size
+
+#####
+# get a cohort of patients with diabetes-related lab work
+#####
+# To increase the sample size to include those who _should_ be tested for
+# diabetes (i.e. those who are at risk due to high A1C), we want to apply a
+# positive label even to undiagnosed patients if their labs indicate elevated
+# risk.
+#####
+# First, determine which labs to evaluate.
+
+glucose_related_labs = d_labitems[
+  d_labitems['LABEL'].str.contains('glucose', case=False, na=False) &
+  d_labitems['FLUID'].str.contains('blood|plasma|serum', case=False, na=False)
+]
+glucose_related_labs.head()
+
+glucose_related_lab_events = labs[
+  labs['ITEMID'].isin(glucose_related_labs['ITEMID']) & labs['VALUEUOM'].notna()
+]
+glucose_related_lab_events['VALUEUOM'].unique()
+
+a1c_related_labs = d_labitems[
+  d_labitems['LABEL'].str.contains(
+    'a1c|hba1c|glycohemoglobin',
+    case=False,
+    na=False)
+]
+a1c_related_labs.head()
+
+a1c_related_lab_events = labs[
+  labs['ITEMID'].isin(a1c_related_labs['ITEMID']) & labs['VALUEUOM'].notna()
+]
+a1c_related_lab_events['VALUEUOM'].unique()
+
+# TODO: need to interpret each lab event
+# TODO: should probably remove lab events for patients already in cohort A?
