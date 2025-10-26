@@ -79,6 +79,20 @@ glucose_related_lab_events = labs[
   labs['ITEMID'].isin(glucose_related_labs['ITEMID']) & labs['VALUEUOM'].notna()
 ]
 glucose_related_lab_events['VALUEUOM'].unique()
+glucose_related_lab_events.head()
+
+# TODO: should probably remove lab events for patients already in cohort A?
+
+# Source for normal blood glucose levels:
+# https://my.clevelandclinic.org/health/diagnostics/12363-blood-glucose-test
+# **NOTE**: used for demonstration purposes only, not for medical decision-making
+# To improve accuracy of model, medical professionals should be consulted for the
+# determination of normal blood glucose levels.
+
+lab_abnormal_glucose = glucose_related_lab_events[
+  (glucose_related_lab_events['VALUENUM'] < 70) | (glucose_related_lab_events['VALUENUM'] > 110)
+]
+lab_abnormal_glucose.size
 
 a1c_related_labs = d_labitems[
   d_labitems['LABEL'].str.contains(
@@ -92,6 +106,4 @@ a1c_related_lab_events = labs[
   labs['ITEMID'].isin(a1c_related_labs['ITEMID']) & labs['VALUEUOM'].notna()
 ]
 a1c_related_lab_events['VALUEUOM'].unique()
-
-# TODO: need to interpret each lab event
-# TODO: should probably remove lab events for patients already in cohort A?
+# TODO: need to interpret A1C lab events
