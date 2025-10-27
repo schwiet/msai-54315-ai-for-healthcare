@@ -1,6 +1,8 @@
 from operator import concat
 import pandas as pd
 
+RANDOM_STATE = 1138
+
 # keep only the timestamp for labevents to find first-order times + values for
 # labeling. Also include definitions of lab events
 labs = pd.read_csv(
@@ -224,7 +226,7 @@ first_admissions_in_label_cohorts.info()
 
 # feature engineering. This is the initial feature set for the model.
 
-features = [
+cat_features = [
   'ADMISSION_TYPE',
   'ADMISSION_LOCATION',
   'INSURANCE',
@@ -232,11 +234,146 @@ features = [
   'RELIGION',
   'MARITAL_STATUS',
   'ETHNICITY',
-  'GENDER',
-  'age_at_admission'
+  'GENDER'
 ]
-first_admissions_in_label_cohorts[features].isna().sum()
-first_admissions_in_label_cohorts['MARITAL_STATUS'].value_counts()
-first_admissions_in_label_cohorts['LANGUAGE'].info()
-first_admissions_in_label_cohorts['RELIGION'].info()
+num_features = ['age_at_admission']
+features = cat_features + num_features
 
+first_admissions_in_label_cohorts[features].isna().sum()
+
+# assume that missing language means English
+first_admissions_in_label_cohorts['LANGUAGE'] = first_admissions_in_label_cohorts['LANGUAGE'].fillna('ENGL')
+first_admissions_in_label_cohorts['LANGUAGE'].value_counts()
+
+# mark missing marital status and religion as 'Unknown'
+first_admissions_in_label_cohorts['MARITAL_STATUS'] = first_admissions_in_label_cohorts['MARITAL_STATUS'].fillna('UNKNOWN (DEFAULT)')
+first_admissions_in_label_cohorts['MARITAL_STATUS'].value_counts()
+
+# mark missing religion as 'NOT SPECIFIED'
+first_admissions_in_label_cohorts['RELIGION'] = first_admissions_in_label_cohorts['RELIGION'].fillna('NOT SPECIFIED')
+first_admissions_in_label_cohorts['RELIGION'].value_counts()
+
+first_admissions_in_label_cohorts[features].isna().sum()
+
+########################################################
+# Prepare dataset for modeling DecisionTreeClassifier
+########################################################
+
+# Features
+X = first_admissions_in_label_cohorts[features].copy()
+# labels
+y = first_admissions_in_label_cohorts['label'].copy()
+
+# split the dataset into training and testing sets
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=RANDOM_STATE
+)
+
+# one-hot encode the categorical features
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+preprocess = ColumnTransformer([
+    ('cat', OneHotEncoder(handle_unknown='ignore'), cat_features)
+], remainder='passthrough')
+
+# train a shallow tree classifier to do some initial evaluation
+from sklearn.pipeline import Pipeline
+from sklearn.tree import DecisionTreeClassifier
+
+clf = DecisionTreeClassifier(
+    max_depth=6,            # shallow tree for interpretability
+    class_weight='balanced',
+    random_state=RANDOM_STATE
+)
+
+model = Pipeline([
+    ('preprocess', preprocess),
+    ('tree', clf)
+])
+
+model.fit(X_train, y_train)
+
+# evaluate the model
+from sklearn.metrics import classification_report, roc_auc_score, ConfusionMatrixDisplay, RocCurveDisplay, PrecisionRecallDisplay
+from sklearn.metrics import precision_recall_curve, f1_score
+
+def evaluate_model(model, X_test, y_test):
+  y_pred = model.predict(X_test)
+  y_prob = model.predict_proba(X_test)[:,1]
+
+  print(classification_report(y_test, y_pred))
+  print("ROC AUC:", roc_auc_score(y_test, y_prob))
+
+  ConfusionMatrixDisplay.from_predictions(y_test, y_pred)
+
+  prec, rec, thresh = precision_recall_curve(y_test, y_prob, pos_label=True)
+
+  # Example: pick threshold that achieves ~0.30 negative precision (or use F1 for 'False' class)
+  # We'll choose the threshold maximizing macro-F1 as a demo:
+  import numpy as np
+  def macro_f1_at(t):
+      yp = (y_prob >= t).astype(bool)
+      from sklearn.metrics import f1_score
+      return f1_score(y_test, yp, average='macro')
+
+  best_t = max(np.linspace(0.1, 0.9, 41), key=macro_f1_at)
+  print("Best threshold for macro-F1:", best_t)
+  y_pred_adj = (y_prob >= best_t).astype(bool)
+  print(classification_report(y_test, y_pred_adj))
+  ConfusionMatrixDisplay.from_predictions(y_test, y_pred_adj)
+  RocCurveDisplay.from_predictions(y_test, y_prob)
+  # PrecisionRecallDisplay.from_predictions(y_test, y_prob)
+
+evaluate_model(model, X_test, y_test)
+
+# try a different sized tree
+eval_clf = DecisionTreeClassifier(
+    max_depth=4,
+    class_weight='balanced',
+    random_state=RANDOM_STATE
+)
+
+eval_model = Pipeline([
+    ('preprocess', preprocess),
+    ('tree', eval_clf)
+])
+
+eval_model.fit(X_train, y_train)
+
+evaluate_model(eval_model, X_test, y_test)
+
+# ChatGPT says:
+# "The model shows good discrimination (AUC ≈ 0.70) using only admission-level
+# features, which is acceptable for an early predictive model with minimal
+# clinical data."
+
+# Try Random Forest
+from sklearn.ensemble import RandomForestClassifier
+
+rf = RandomForestClassifier(
+    n_estimators=400,
+    max_depth=None,              # let trees grow, control with min_samples_leaf
+    min_samples_leaf=5,          # stabilizes splits on imbalance
+    max_features='sqrt',         # good default
+    class_weight='balanced',     # handle ~9:1 imbalance
+    n_jobs=-1,
+    random_state=RANDOM_STATE
+)
+
+model = Pipeline([
+    ('prep', preprocess),
+    ('rf', rf)
+])
+
+model.fit(X_train, y_train)
+
+evaluate_model(model, X_test, y_test)
+
+# Now compare to a dummy model
+from sklearn.dummy import DummyClassifier
+
+dummy = DummyClassifier(strategy='stratified', random_state=RANDOM_STATE)
+dummy.fit(X_train, y_train) 
+
+evaluate_model(dummy, X_test, y_test)
