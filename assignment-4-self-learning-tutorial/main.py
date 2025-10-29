@@ -1,4 +1,3 @@
-from operator import concat
 import pandas as pd
 
 RANDOM_STATE = 1138
