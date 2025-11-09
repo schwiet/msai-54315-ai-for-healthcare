@@ -112,10 +112,11 @@ data["admission_location"] = data["admission_location"].fillna("TRANSFER FROM HO
 
 X = pd.get_dummies(data[features], columns=cat_cols, dummy_na=False)
 
-# cast age got float, since we will normalize after splitting
-X = X.astype({ "anchor_age": "float64" })
-print(X.dtypes["anchor_age"]) 
+# cast age to float, since we will normalize after splitting
+# cast one-hot encoded columns to float, since our MLP model expects that
+X = X.astype("float64")
 
+# cast one-hot encoded columns to float, since we will normalize after splitting
 y = data["y"].values
 hadm_ids = data["hadm_id"].values
 
@@ -180,3 +181,123 @@ val_auc_lr = roc_auc_score(y_val, val_probs_lr)
 val_ap_lr  = average_precision_score(y_val, val_probs_lr)
 
 print(f"Logistic Regression - Val ROC AUC: {val_auc_lr:.3f}, AP: {val_ap_lr:.3f}")
+
+##################################################################
+# build a simple fully connected network (MLP) in PyTorch.
+##################################################################
+
+import torch
+from torch.utils.data import Dataset, DataLoader
+
+# create a small Dataset class for the training data
+class TabularDataset(Dataset):
+    def __init__(self, X, y):
+        self.X = torch.tensor(X, dtype=torch.float32)
+        self.y = torch.tensor(y, dtype=torch.float32)
+        
+    def __len__(self):
+        return self.X.shape[0]
+    
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
+# create datasets and loaders for each split
+batch_size = 64
+
+train_ds = TabularDataset(X_train.to_numpy(), y_train)
+val_ds   = TabularDataset(X_val.to_numpy(), y_val)
+test_ds  = TabularDataset(X_test.to_numpy(), y_test)
+
+train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
+val_loader   = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
+test_loader  = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
+
+# use a simple MLP model with two hidden layers
+# Input -> 2 hidden layers -> output
+# Dropout + BatchNorm to help generalization
+
+input_dim = X_train.shape[1]
+
+class MLP(torch.nn.Module):
+    def __init__(self, input_dim):
+        super().__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Linear(input_dim, 128),
+            torch.nn.BatchNorm1d(128),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.3),
+            
+            torch.nn.Linear(128, 64),
+            torch.nn.BatchNorm1d(64),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.3),
+            
+            torch.nn.Linear(64, 1)  # output logits
+        )
+        
+    def forward(self, x):
+        return self.net(x).squeeze(1)  # (batch,)
+
+# Initialize model, loss, optimizer
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = MLP(input_dim).to(device)
+
+criterion = torch.nn.BCEWithLogitsLoss()  # combines sigmoid + BCE
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+# we’ll train for a fixed number of epochs and track validation AUC
+def evaluate(model, loader):
+    model.eval()
+    all_probs = []
+    all_targets = []
+    with torch.no_grad():
+        for X_batch, y_batch in loader:
+            X_batch = X_batch.to(device)
+            y_batch = y_batch.to(device)
+            logits = model(X_batch)
+            probs = torch.sigmoid(logits)
+            all_probs.append(probs.cpu().numpy())
+            all_targets.append(y_batch.cpu().numpy())
+            
+    all_probs = np.concatenate(all_probs)
+    all_targets = np.concatenate(all_targets)
+    
+    auc = roc_auc_score(all_targets, all_probs)
+    ap  = average_precision_score(all_targets, all_probs)
+    return auc, ap, all_probs, all_targets
+
+
+import numpy as np
+n_epochs = 20
+best_val_auc = 0.0
+best_state_dict = None
+
+for epoch in range(1, n_epochs + 1):
+    model.train()
+    epoch_loss = 0.0
+    
+    for X_batch, y_batch in train_loader:
+        X_batch = X_batch.to(device)
+        y_batch = y_batch.to(device)
+        
+        optimizer.zero_grad()
+        logits = model(X_batch)
+        loss = criterion(logits, y_batch)
+        loss.backward()
+        optimizer.step()
+        
+        epoch_loss += loss.item() * X_batch.size(0)
+    
+    epoch_loss /= len(train_ds)
+    
+    val_auc, val_ap, _, _ = evaluate(model, val_loader)
+    
+    print(f"Epoch {epoch:02d} | Train Loss: {epoch_loss:.4f} | "
+          f"Val ROC AUC: {val_auc:.3f} | Val AP: {val_ap:.3f}")
+    
+    if val_auc > best_val_auc:
+        best_val_auc = val_auc
+        best_state_dict = model.state_dict()
+
+# load the best model weights
+model.load_state_dict(best_state_dict)
