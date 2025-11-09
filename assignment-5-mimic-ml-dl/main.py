@@ -158,3 +158,25 @@ X_train.head()
 # apply to each split
 for df in (X_train, X_val, X_test):
     df.loc[:, num_cols] = scaler.transform(df[num_cols])
+
+
+##################################################################
+# build a simple baseline model for comparison
+##################################################################
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score, average_precision_score
+
+log_reg = LogisticRegression(
+    max_iter=1000,
+    class_weight="balanced",
+    n_jobs=-1
+)
+log_reg.fit(X_train, y_train)
+
+# validation performance
+val_probs_lr = log_reg.predict_proba(X_val)[:, 1]
+val_auc_lr = roc_auc_score(y_val, val_probs_lr)
+val_ap_lr  = average_precision_score(y_val, val_probs_lr)
+
+print(f"Logistic Regression - Val ROC AUC: {val_auc_lr:.3f}, AP: {val_ap_lr:.3f}")
