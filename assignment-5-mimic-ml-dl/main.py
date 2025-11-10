@@ -301,3 +301,71 @@ for epoch in range(1, n_epochs + 1):
 
 # load the best model weights
 model.load_state_dict(best_state_dict)
+
+# compute the test metrics
+
+test_auc, test_ap, test_probs, test_targets = evaluate(model, test_loader)
+print(f"Test ROC AUC: {test_auc:.3f}")
+print(f"Test Average Precision: {test_ap:.3f}")
+
+# compare with logistic regression
+
+test_probs_lr = log_reg.predict_proba(X_test)[:, 1]
+test_auc_lr = roc_auc_score(y_test, test_probs_lr)
+test_ap_lr  = average_precision_score(y_test, test_probs_lr)
+
+print(f"Logistic Regression - Test ROC AUC: {test_auc_lr:.3f}, AP: {test_ap_lr:.3f}")
+
+# Plot the ROC and PR curves
+
+from sklearn.metrics import roc_curve, precision_recall_curve
+
+# ROC curve
+fpr_dl, tpr_dl, _ = roc_curve(test_targets, test_probs)
+fpr_lr, tpr_lr, _ = roc_curve(y_test, test_probs_lr)
+
+plt.figure()
+plt.plot(fpr_dl, tpr_dl, label=f"MLP (AUC={test_auc:.3f})")
+plt.plot(fpr_lr, tpr_lr, label=f"LogReg (AUC={test_auc_lr:.3f})", linestyle="--")
+plt.plot([0, 1], [0, 1], color="grey", linestyle=":")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve (Test Set)")
+plt.legend()
+plt.show()
+
+# Precision-Recall
+prec_dl, rec_dl, _ = precision_recall_curve(test_targets, test_probs)
+prec_lr, rec_lr, _ = precision_recall_curve(y_test, test_probs_lr)
+
+plt.figure()
+plt.plot(rec_dl, prec_dl, label=f"MLP (AP={test_ap:.3f})")
+plt.plot(rec_lr, prec_lr, label=f"LogReg (AP={test_ap_lr:.3f})", linestyle="--")
+plt.xlabel("Recall")
+plt.ylabel("Precision")
+plt.title("Precision-Recall Curve (Test Set)")
+plt.legend()
+plt.show()
+
+
+# show the classification report using the default threshold of 0.5
+from sklearn.metrics import classification_report
+threshold = 0.5
+test_pred_labels = (test_probs >= threshold).astype(int)
+
+print(classification_report(test_targets, test_pred_labels, target_names=["Non-ICU", "ICU"]))
+
+# show a confusion matrix
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(test_targets, test_pred_labels)
+
+plt.figure()
+plt.imshow(cm, cmap="Blues")
+plt.colorbar()
+plt.xticks([0,1], ["Pred Non-ICU", "Pred ICU"])
+plt.yticks([0,1], ["True Non-ICU", "True ICU"])
+plt.title("Confusion Matrix (Test)")
+for i in range(2):
+    for j in range(2):
+        plt.text(j, i, cm[i, j], ha="center", va="center", color="black")
+plt.show()
