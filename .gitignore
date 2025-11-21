@@ -14,3 +14,4 @@ __pycache__/
 # Datasets
 mimic-iii/
 mimic-iv/
+10k_synthea_covid19_csv/
