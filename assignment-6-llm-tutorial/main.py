@@ -8,6 +8,7 @@ else:
     print("OPENAI_KEY is empty or not set")
 
 import pandas as pd
+# src: https://mitre.box.com/shared/static/9iglv8kbs1pfi7z8phjl9sbpjk08spze.zip
 patients = pd.read_csv("10k_synthea_covid19_csv/patients.csv")
 encounters = pd.read_csv("10k_synthea_covid19_csv/encounters.csv")
 conditions = pd.read_csv("10k_synthea_covid19_csv/conditions.csv")
