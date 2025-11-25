@@ -15,3 +15,5 @@ __pycache__/
 mimic-iii/
 mimic-iv/
 10k_synthea_covid19_csv/
+
+**/_cache/*
