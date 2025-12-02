@@ -193,8 +193,66 @@ diagnoses_ccs[diagnoses_ccs['CCS_CATEGORY'] == 'UNMAPPED'].head()
 
 diagnoses_ccs.head()
 
-dataset.describe()
+dataset.info()
+dataset.head()
+print(dataset.columns.tolist())
 
-# TODO next, turn dataset and diagnoses_ccs into a single dataframe
+
+# create the frequency table for diagnoses, now that they've been tamed
+patient_diagnoses = pd.crosstab(
+    index=diagnoses_ccs['SUBJECT_ID'],
+    columns=diagnoses_ccs['CCS_CATEGORY']
+)
+print(patient_diagnoses.shape)
+patient_diagnoses.head()
+
+# next, turn dataset and diagnoses_ccs into a single dataframe
 # with a wide format, with one row per patient. for diagnoses columns,
-# we'll sum the instances of each CCS category for that patient.
+# we'll sum the frequency table created above
+
+exceptions = ['SUBJECT_ID', 'HADM_ID', 'ADMITTIME', 'age_at_admission']
+one_hot_columns = [col for col in dataset.columns if col not in exceptions]
+
+# aggregate the one-hot encoded columns
+agg_rules = {col: 'max' for col in one_hot_columns}
+# add a rule for age at admission to get the min and max age at admission
+agg_rules['age_at_admission'] = ['min', 'max']
+# add a rule for HADM_ID to get the count of admissions
+agg_rules['HADM_ID'] = 'count'
+
+patient_demographics = dataset.groupby('SUBJECT_ID').agg(agg_rules)
+
+print(patient_demographics.shape)
+patient_demographics.columns.tolist()
+
+# flatten the column names to avoid the multi-index
+flattened_columns = [
+    # for one-hot encoded columns, use the original column name
+    col[0] if col[0] in one_hot_columns else 
+    "admission_count" if col[0] == 'HADM_ID' else
+    # for other columns, use the original column name with a postfix
+    "_".join(col) for col in patient_demographics.columns]
+patient_demographics.columns = flattened_columns
+
+structured_features = patient_demographics.join(
+    patient_diagnoses,
+    on='SUBJECT_ID',
+    how='left'
+)
+
+structured_features.fillna(0, inplace=True)
+
+print(structured_features.shape)
+structured_features.head()
+
+# lastly, we need to scale some of the features, so they don't
+# have an exaggerated effect on the model.
+
+cols_to_scale = ['age_at_admission_min', 'age_at_admission_max', 'admission_count']
+
+for col in cols_to_scale:
+    min_val = structured_features[col].min()
+    max_val = structured_features[col].max()
+    structured_features[col] = (structured_features[col] - min_val) / (max_val - min_val)
+
+structured_features['admission_count'].describe()
