@@ -256,3 +256,91 @@ for col in cols_to_scale:
     structured_features[col] = (structured_features[col] - min_val) / (max_val - min_val)
 
 structured_features['admission_count'].describe()
+
+##################################################################
+# Discharge Summary Embeddings created in note-events-embeddings.py
+##################################################################
+
+# load the discharge summary embeddings
+discharge_summaries_embeddings = pd.read_csv("./mimic-iii/patient_embeddings.csv")
+discharge_summaries_embeddings.info()
+discharge_summaries_embeddings.head()
+print(discharge_summaries_embeddings.shape)
+
+# reset index so SUBJECT_ID becomes a normal column
+structured_features = structured_features.reset_index()
+
+# merge the discharge summary embeddings with the structured features
+master_dataset = structured_features.merge(
+    discharge_summaries_embeddings,
+    on='SUBJECT_ID',
+    how='inner'
+)
+
+print(f"Final Dataset Shape: {master_dataset.shape}")
+master_dataset.head()
+master_dataset.info()
+
+# Normalization to prevent the embeddings from having a dominating effect on the model.
+
+from sklearn.preprocessing import normalize
+
+# separate IDs from the Math
+# store IDs in a separate list so we can look them up later
+patient_ids = master_dataset['SUBJECT_ID'].values
+feature_matrix = master_dataset.drop(columns=['SUBJECT_ID']).values
+feature_matrix.shape
+
+# the first 426 cols are structured, the rest are BERT
+split_index = 426 
+
+struct_part = feature_matrix[:, :split_index]
+bert_part = feature_matrix[:, split_index:]
+
+# normalize embeddings to unit length so they have equal "weight"
+bert_norm = normalize(bert_part, axis=1)
+
+# re-combine them
+final_matrix = np.hstack([struct_part, bert_norm])
+
+# build the search engine
+# metric='cosine' is standard for semantic similarity
+from sklearn.neighbors import NearestNeighbors
+print("Fitting Nearest Neighbors model...")
+knn = NearestNeighbors(n_neighbors=6, metric='cosine', algorithm='brute')
+knn.fit(final_matrix)
+print("Model trained! Ready for queries.")
+
+# helper function to find similar patients
+
+def find_similar_patients(subject_id, k=5):
+    """
+    Finds the k nearest neighbors for a given patient ID.
+    """
+    # find the index of this patient in our matrix
+    try:
+        idx = np.where(patient_ids == subject_id)[0][0]
+    except IndexError:
+        return f"Patient {subject_id} not found in database."
+
+    # get the vector and ask the model
+    # reshaped to (1, -1) because the model expects a 2D array
+    query_vector = final_matrix[idx].reshape(1, -1)
+    distances, indices = knn.kneighbors(query_vector, n_neighbors=k+1)
+    
+    # format the results
+    # skip the first result (index 0) because it's the patient themselves!
+    print(f"--- Patients similar to {subject_id} ---")
+    for i in range(1, k+1):
+        neighbor_idx = indices[0][i]
+        neighbor_id = patient_ids[neighbor_idx]
+        dist = distances[0][i]
+        
+        # calculate 'similarity score' from distance (cosine dist = 1 - similarity)
+        score = (1 - dist) * 100
+        print(f"Match #{i}: Patient {neighbor_id} (Similarity: {score:.1f}%)")
+
+# test it with a random patient from the list
+# pick one ID from the dataset to test
+test_id = patient_ids[10] 
+find_similar_patients(test_id)
