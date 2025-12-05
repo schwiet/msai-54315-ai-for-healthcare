@@ -38,4 +38,4 @@ def compare_patient_notes(id_1, id_2):
     print("\n")
 
 # look at notes for two patients
-compare_patient_notes(19, 19835)
+compare_patient_notes(62463, 19835)

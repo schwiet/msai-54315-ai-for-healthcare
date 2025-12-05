@@ -3,15 +3,15 @@ import pandas as pd
 chunksize = 10000
 chunks = []
 
-# Iterate through the file in chunks
+# iterate through the file in chunks
 for chunk in pd.read_csv("./mimic-iii/NOTEEVENTS.csv.gz", chunksize=chunksize):
-    # FILTER: Keep only discharge summaries
+    # filter: keep only discharge summaries
     filtered_chunk = chunk[chunk['CATEGORY'] == 'Discharge summary']
     
-    # STORE: Add the filtered piece to our list
+    # store: add the filtered piece to our list
     chunks.append(filtered_chunk)
 
-# Glue all the pieces together
+# glue all the pieces together
 discharge_summaries = pd.concat(chunks)
 discharge_summaries.info()
 

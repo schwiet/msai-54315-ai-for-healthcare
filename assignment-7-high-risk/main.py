@@ -344,3 +344,32 @@ def find_similar_patients(subject_id, k=5):
 # pick one ID from the dataset to test
 test_id = patient_ids[10] 
 find_similar_patients(test_id)
+
+##################################################################
+# Save the multi-modal data for use in the RAG
+##################################################################
+
+# save the final matrix with patient IDs for multi-modal search
+print("\nSaving multi-modal vectors...")
+
+# Create a DataFrame with the final matrix and patient IDs
+multimodal_df = pd.DataFrame(final_matrix)
+multimodal_df.insert(0, 'SUBJECT_ID', patient_ids)
+multimodal_df.to_csv("./mimic-iii/multimodal_vectors.csv", index=False)
+
+# also save the structured features separately for filtering
+structured_features.to_csv("./mimic-iii/structured_features.csv", index=False)
+
+# save metadata about the column structure
+metadata = {
+    'split_index': split_index,
+    'structured_columns': structured_features.columns.tolist(),
+    'total_features': final_matrix.shape[1]
+}
+import json
+with open("./mimic-iii/multimodal_metadata.json", "w") as f:
+    json.dump(metadata, f, indent=2)
+
+print(f"✅ Saved multimodal_vectors.csv ({len(patient_ids)} patients, {final_matrix.shape[1]} features)")
+print(f"✅ Saved structured_features.csv for filtering")
+print(f"✅ Saved multimodal_metadata.json")
