@@ -128,6 +128,7 @@ procedures = pd.read_csv("./mimic-iii/PROCEDURES_ICD.csv.gz")
 
 # Drop rows where ICD9_CODE is missing
 diagnoses = diagnoses.dropna(subset=['ICD9_CODE'])
+diagnoses['ICD9_CODE'].unique().size
 
 # To keep diagnoses codes from exploding our dimensionality,
 # we use CCS Crosswalk to collapse related diagnoses into
