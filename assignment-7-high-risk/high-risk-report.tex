@@ -141,12 +141,26 @@ We embedded discharge summaries only. The \texttt{NOTEEVENTS} table was streamed
 
 \bigskip
 
-Our final patient vector consisted of our $426$-dimension structured features plus the $768$-dimensional vector from the clinical BERT embeddings.
+Our final patient vector consisted of our $426$-dimension structured features plus the $768$-dimensional vector from the clinical BERT embeddings. Our hypbrid patient representation had $41{,}117$ patients, each with a combined vector dimension of $1{,}194$.
 
 
 \subsection{Retrieval Strategy}
+With the patient vectors in their multimodal format, it was now possible to perform patient-to-patient similarity searches. Given one patient's vector, we could find the $k$ nearest neighbors in the patient space. We used the \texttt{sklearn} library \cite{scikitlearn_neighbors_docs} to perform the nearest neighbor search with the cosine distance metric.
+
+
+\begin{verbatim}
+--- Patients similar to 19 ---
+Match #1: Patient 19835 (Similarity: 76.3%)
+Match #2: Patient 3340 (Similarity: 71.5%)
+Match #3: Patient 60423 (Similarity: 71.4%)
+Match #4: Patient 29813 (Similarity: 68.4%)
+Match #5: Patient 1909 (Similarity: 68.3%)
+\end{verbatim}
+
+For the authors, this was the stage where their understanding of the RAG pipeline and the retrieval strategy became more concrete.
 
 \subsection{Generative Synthesis}
+
 
 \section{Results}
 
