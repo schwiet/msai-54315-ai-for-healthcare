@@ -104,7 +104,7 @@
 %%
 %% The "title" command has an optional parameter,
 %% allowing the author to define a "short title" to be used in page headers.
-\title{Building a Natural Way to Find Similar Patients}
+\title{Building a RAG as a Natural Way to Find Similar Patients}
 
 %%
 %% The "author" command and its associated commands are used to define
@@ -120,14 +120,6 @@
   \state{Texas}
   \country{USA}
 }
-
-%%
-%% By default, the full list of authors will be used in the page
-%% headers. Often, this list is too long, and will overlap
-%% other information printed in the page headers. This command allows
-%% the author to define a more concise list
-%% of authors' names for this purpose.
-\renewcommand{\shortauthors}{Trovato et al.}
 
 %%
 %% The abstract is a short summary of the work to be presented in the
@@ -194,13 +186,39 @@
 
 \subsection{Data Ingestion}
 
-We started with the structured part of the patient representation by importing and merging the Patients with the Admissions tables on SUBJECT\_ID resulting in an entry for each admission that included basic patient demographic information found in the Patients table: GENDER and DOB. From the Admissions table, the ETHNICITY, INSURANCE, LANGUAGE, RELIGION, MARITAL\_STATUS columns were chosen as demographic features. 
+We started with the structured part of the patient representation by importing and merging the \texttt{PATIENTS} with \texttt{ADMISSIONS} tables on \texttt{SUBJECT\_ID} resulting in an entry for each admission that included basic patient demographic information found in the \texttt{PATIENTS} table: \texttt{GENDER} and \texttt{DOB}. From the Admissions table, the \texttt{ETHNICITY}, \texttt{INSURANCE}, \texttt{LANGUAGE}, \texttt{RELIGION}, \texttt{MARITAL\_STATUS} columns were chosen as demographic features. From the \texttt{table DIAGNOSES\_ICD} table, we imported \texttt{ICD9\_CODE} for later use.
 
-To prepare the unstructured Discharge summary notes for embedding, the NOTEEVENTS table was loaded by chunks with pandas and only rows with CATEGORY equal to "Discharge summary" were kept.
+To prepare the unstructured Discharge summary notes for embedding, the \texttt{NOTEEVENTS} table was loaded by chunks with pandas and only rows with \texttt{CATEGORY} equal to "Discharge summary" were kept.
 
 \subsection{Feature Engineering}
 
-Further processing was necessary for the structured features to prepare it for the hybrid patient representation where we grouped everything by SUBJECT\_ID to create one vector per patient (combining all their notes and admissions) TODO: continue....
+Processing was necessary for the structured features to prepare them for the hybrid patient representation, where we grouped everything by \texttt{SUBJECT\_ID} to create one vector per patient (combining their notes with the structured data).
+
+\subsubsection{The Age Calculation}
+
+The MIMIC-III database provides the date of birth (with some caveats) from the \texttt{PATIENTS} table and the admission time from the \texttt{ADMISSIONS} table. Each patient's date of birth was subtracted from their first admission time to produce a derived  "age in" column, and then the date of birth was subtracted from their last admission to produce a derived "age out" column. Age columns are more easily scalable features for the target dataset.
+
+\subsubsection{The Categorical Data}
+
+The other features: \texttt{ETHNICITY}, \texttt{INSURANCE}, \texttt{LANGUAGE}, \texttt{RELIGION}, \texttt{MARITAL\_STATUS}, \texttt{GENDER}, and \texttt{ICD9\_CODE} are categorical values needed to be turned into numbers. 
+
+\bigskip
+
+Before encoding, missing values were handled as follows:
+\begin{itemize}
+    \item \texttt{LANGUAGE} - Because the origin of this data is the United States, it was assumed that a missing language value indicated a non-noteworthy value of "English"
+    \item \texttt{MARITAL\_STATUS} - Missing values were filled with "Unknown"
+    \item \texttt{RELIGION} - Missing values were filled with "Not Specified"
+\end{itemize}
+All other values were non-null.
+
+\bigskip
+
+Instead of assigning each unique value an integer value - which might skew our patient search to associate two adjacent encodings (e.g. $Married = 1, Single = 2, ... Life Partner = 7$) when no such association is warranted - we used one-hot encoding (TODO: reference) to spread each unique value into a new column. If a patient's \texttt{MARITAL\_STATUS} value is "SINGLE", there is a $1$ for the value of the \texttt{SINGLE} column and a $0$ for each of the others.
+
+\bigskip
+
+The \texttt{RELIGION} values were slightly simplified by collapsing all denominations of Christianity into a single "Christian" value. This traded some granularity in religious affiliation with the benefit of reducing the vector dimension impact of one-hot encoding.
 
 \end{document}
 \endinput
