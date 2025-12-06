@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  6 DEC 2025 12:06
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  6 DEC 2025 14:02
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -874,113 +874,143 @@ LaTeX Font Info:    Font shape `U/ntxexa/m/n' will be
 (Font)              scaled to size 6.0pt on input line 80.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
 (Font)              scaled to size 9.0pt on input line 82.
-LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 88.
+LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 90.
  (/usr/local/texlive/2025/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 File: t1zi4.fd 2018/01/14 T1/zi4 (Inconsolata)
 )
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 9.0pt on input line 88.
+(Font)              scaled to size 9.0pt on input line 90.
 Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `zi4' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/it' will be
-(Font)              scaled to size 9.0pt on input line 98.
+(Font)              scaled to size 9.0pt on input line 100.
 
-Overfull \hbox (19.37604pt too wide) in paragraph at lines 102--103
- \T1/LinuxBiolinumT-TLF/m/it/9 (-20) 2.2.2 The Cat-e-gor-i-cal Data.[] \T1/LinuxLibertineT-TLF/m/n/9 (-20) The other fea-tures: \T1/zi4/m/n/9 ETHNICITY, INSURANCE,
+Overfull \hbox (19.37604pt too wide) in paragraph at lines 104--105
+ \T1/LinuxBiolinumT-TLF/m/it/9 (-20) 3.2.2 The Cat-e-gor-i-cal Data.[] \T1/LinuxLibertineT-TLF/m/n/9 (-20) The other fea-tures: \T1/zi4/m/n/9 ETHNICITY, INSURANCE,
  []
 
 
-Overfull \hbox (5.83717pt too wide) in paragraph at lines 102--103
+Overfull \hbox (5.83717pt too wide) in paragraph at lines 104--105
 \T1/zi4/m/n/9 LANGUAGE, RELIGION, MARITAL_STATUS, GENDER, and ICD9_CODE
  []
 
 
-Class acmart Warning: \vspace should only be used to provide space above/below surrounding objects on input line 104.
+Class acmart Warning: \vspace should only be used to provide space above/below surrounding objects on input line 106.
 
 
 
 LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 9.0pt on input line 108.
+(Font)              scaled to size 9.0pt on input line 110.
 LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 6.6pt on input line 108.
+(Font)              scaled to size 6.6pt on input line 110.
 LaTeX Font Info:    Font shape `OML/nxlmi/m/it' will be
-(Font)              scaled to size 9.0pt on input line 108.
+(Font)              scaled to size 9.0pt on input line 110.
 LaTeX Font Info:    Font shape `OML/nxlmi/m/it' will be
-(Font)              scaled to size 6.6pt on input line 108.
+(Font)              scaled to size 6.6pt on input line 110.
 LaTeX Font Info:    Font shape `LMS/ntxsy/m/n' will be
-(Font)              scaled to size 9.0pt on input line 108.
+(Font)              scaled to size 9.0pt on input line 110.
 LaTeX Font Info:    Font shape `LMS/ntxsy/m/n' will be
-(Font)              scaled to size 6.6pt on input line 108.
+(Font)              scaled to size 6.6pt on input line 110.
 LaTeX Font Info:    Font shape `LMX/ntxexx/m/n' will be
-(Font)              scaled to size 9.0pt on input line 108.
+(Font)              scaled to size 9.0pt on input line 110.
 LaTeX Font Info:    Font shape `LMX/ntxexx/m/n' will be
-(Font)              scaled to size 6.6pt on input line 108.
+(Font)              scaled to size 6.6pt on input line 110.
 LaTeX Font Info:    Font shape `U/ntxmia/m/it' will be
-(Font)              scaled to size 9.0pt on input line 108.
+(Font)              scaled to size 9.0pt on input line 110.
 LaTeX Font Info:    Font shape `U/ntxmia/m/it' will be
-(Font)              scaled to size 6.6pt on input line 108.
+(Font)              scaled to size 6.6pt on input line 110.
 LaTeX Font Info:    Font shape `U/ntxsym/m/n' will be
-(Font)              scaled to size 9.0pt on input line 108.
+(Font)              scaled to size 9.0pt on input line 110.
 LaTeX Font Info:    Font shape `U/ntxsym/m/n' will be
-(Font)              scaled to size 6.6pt on input line 108.
+(Font)              scaled to size 6.6pt on input line 110.
 LaTeX Font Info:    Font shape `U/ntxsyc/m/n' will be
-(Font)              scaled to size 9.0pt on input line 108.
+(Font)              scaled to size 9.0pt on input line 110.
 LaTeX Font Info:    Font shape `U/ntxsyc/m/n' will be
-(Font)              scaled to size 6.6pt on input line 108.
+(Font)              scaled to size 6.6pt on input line 110.
 LaTeX Font Info:    Font shape `U/ntxexa/m/n' will be
-(Font)              scaled to size 9.0pt on input line 108.
+(Font)              scaled to size 9.0pt on input line 110.
 LaTeX Font Info:    Font shape `U/ntxexa/m/n' will be
-(Font)              scaled to size 6.6pt on input line 108.
+(Font)              scaled to size 6.6pt on input line 110.
 
-Overfull \hbox (1.66512pt too wide) in paragraph at lines 109--110
+Overfull \hbox (1.66512pt too wide) in paragraph at lines 111--112
 []\T1/zi4/m/n/9 MARITAL_STATUS \T1/LinuxLibertineT-TLF/m/n/9 (-20) - Miss-ing val-ues were filled with "Un-known" 
  []
 
 
-Class acmart Warning: \vspace should only be used to provide space above/below surrounding objects on input line 114.
+Class acmart Warning: \vspace should only be used to provide space above/below surrounding objects on input line 116.
 
 
-Class acmart Warning: \vspace should only be used to provide space above/below surrounding objects on input line 118.
-
-(./high-risk-report.bbl)
-
-Class acmart Warning: \vspace should only be used to provide space above/below surrounding objects on input line 129.
+Class acmart Warning: \vspace should only be used to provide space above/below surrounding objects on input line 120.
 
 
 
+[1.1{/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_25tcsq.enc}
 
-Package balance Warning: You have called \balance in second column
-(balance)                Columns might not be balanced.
+{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_76gpa5.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_nh77jq.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-4.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_naooyc.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_oexx6f.enc}]
+Overfull \hbox (2.9148pt too wide) in paragraph at lines 135--136
+\T1/LinuxLibertineT-TLF/m/n/9 (-20) chunks with pan-das, fil-tered to \T1/zi4/m/n/9 CATEGORY == "Discharge summary"\T1/LinuxLibertineT-TLF/m/n/9 (-20) ,
+ []
 
-(/usr/local/texlive/2025/texmf-dist/tex/generic/stringenc/se-pdfdoc.def
+(./high-risk-report.bbl
+LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
+(Font)              scaled to size 7.0pt on input line 42.
+LaTeX Info: Redefining \tempurl on input line 58.
+LaTeX Info: Redefining \tempurl on input line 71.
+LaTeX Info: Redefining \tempurl on input line 84.
+
+Underfull \hbox (badness 10000) in paragraph at lines 80--89
+[]\T1/LinuxLibertineT-TLF/m/n/7 (+20) NVIDIA Cor-po-ra-tion. 2025a.  \T1/LinuxLibertineT-TLF/m/it/7 (+20) docker-compose.yml: DGX Spark Play-books\T1/LinuxLibertineT-TLF/m/n/7 (+20) .
+ []
+
+LaTeX Info: Redefining \tempurl on input line 97.
+LaTeX Info: Redefining \tempurl on input line 110.
+)
+
+Class acmart Warning: \vspace should only be used to provide space above/below surrounding objects on input line 149.
+
+
+
+
+
+LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
+(Font)              scaled to size 7.0pt on input line 149.
+LaTeX Font Info:    Trying to load font information for TS1+LinuxBiolinumT-TLF on input line 149.
+(/usr/local/texlive/2025/texmf-dist/tex/latex/libertine/TS1LinuxBiolinumT-TLF.fd
+File: TS1LinuxBiolinumT-TLF.fd 2017/03/20 (autoinst) Font definitions for TS1/LinuxBiolinumT-TLF.
+)
+LaTeX Font Info:    Font shape `TS1/LinuxBiolinumT-TLF/m/n' will be
+(Font)              scaled to size 7.0pt on input line 149.
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `LinuxBiolinumT-TLF' (encoding: TS1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+ (/usr/local/texlive/2025/texmf-dist/tex/generic/stringenc/se-pdfdoc.def
 File: se-pdfdoc.def 2019/11/29 v1.12 stringenc: PDFDocEncoding
 ) (/usr/local/texlive/2025/texmf-dist/tex/generic/stringenc/se-utf8.def
 File: se-utf8.def 2019/11/29 v1.12 stringenc: UTF-8
-) [1.1{/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_25tcsq.enc}
-
-{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_76gpa5.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_nh77jq.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-4.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_naooyc.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_oexx6f.enc}] (./high-risk-report.aux)
+) [2.2{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_afusau.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/libertine/lbtn_7grukw.enc}] (./high-risk-report.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `high-risk-report.out' has not changed.
-(rerunfilecheck)             Checksum: 2154405C4240FA5B8C58A31B22F56688;736.
+(rerunfilecheck)             Checksum: E9DAB1BAD5BFEAEDEF87783856DB8B49;1594.
  ) 
 Here is how much of TeX's memory you used:
- 20965 strings out of 473190
- 337578 string characters out of 5715801
- 823706 words of memory out of 5000000
- 43478 multiletter control sequences out of 15000+600000
- 670776 words of font info for 243 fonts, out of 8000000 for 9000
+ 21094 strings out of 473190
+ 340826 string characters out of 5715801
+ 821652 words of memory out of 5000000
+ 43527 multiletter control sequences out of 15000+600000
+ 686795 words of font info for 282 fonts, out of 8000000 for 9000
  1302 hyphenation exceptions out of 8191
- 90i,11n,131p,1148b,610s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2025/texmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/newtx/LibertineMathMI.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/libertine/LinBiolinumT.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/libertine/LinBiolinumTI.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/libertine/LinLibertineT.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/libertine/LinLibertineTB.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/newtx/txmiaX.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/newtx/txsys.pfb>
-Output written on high-risk-report.pdf (1 page, 336145 bytes).
+ 90i,12n,131p,1450b,612s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/newtx/LibertineMathMI.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/libertine/LinBiolinumT.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/libertine/LinBiolinumTI.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/libertine/LinLibertineT.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/libertine/LinLibertineTB.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/libertine/LinLibertineTI.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/newtx/txmiaX.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/newtx/txsys.pfb>
+Output written on high-risk-report.pdf (2 pages, 403174 bytes).
 PDF statistics:
- 108 PDF objects out of 1000 (max. 8388607)
- 83 compressed objects within 1 object stream
- 13 named destinations out of 1000 (max. 500000)
- 59969 words of extra memory for PDF output out of 61914 (max. 10000000)
+ 180 PDF objects out of 1000 (max. 8388607)
+ 150 compressed objects within 2 object streams
+ 27 named destinations out of 1000 (max. 500000)
+ 72305 words of extra memory for PDF output out of 74296 (max. 10000000)
 

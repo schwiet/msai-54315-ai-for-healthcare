@@ -12,44 +12,51 @@ Reallocated global_strs (elt_size=200001) to 20 items from 10.
 Reallocated glb_str_end (elt_size=4) to 20 items from 10.
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated wiz_functions (elt_size=4) to 9000 items from 6000.
-You've used 1 entry,
+Warning--empty organization in hcup_ccs
+Warning--empty organization in bioclinicalbert
+Warning--empty organization in huggingface_transformers_docs
+Warning--empty organization in dgx_spark_docker_image
+Warning--empty organization in dgx_spark
+Warning--empty organization in pytorch_website
+You've used 6 entries,
             6056 wiz_defined-function locations,
-            1488 strings with 18043 characters,
-and the built_in function-call counts, 822 in all, are:
-= -- 80
-> -- 17
+            1510 strings with 18591 characters,
+and the built_in function-call counts, 4264 in all, are:
+= -- 452
+> -- 100
 < -- 0
-+ -- 4
-- -- 7
-* -- 41
-:= -- 90
-add.period$ -- 5
-call.type$ -- 1
-change.case$ -- 5
-chr.to.int$ -- 1
-cite$ -- 1
-duplicate$ -- 70
-empty$ -- 51
-format.name$ -- 7
-if$ -- 159
-int.to.chr$ -- 2
++ -- 25
+- -- 41
+* -- 264
+:= -- 459
+add.period$ -- 30
+call.type$ -- 6
+change.case$ -- 30
+chr.to.int$ -- 5
+cite$ -- 12
+duplicate$ -- 384
+empty$ -- 273
+format.name$ -- 41
+if$ -- 875
+int.to.chr$ -- 3
 int.to.str$ -- 1
 missing$ -- 0
-newline$ -- 52
-num.names$ -- 7
-pop$ -- 23
+newline$ -- 117
+num.names$ -- 41
+pop$ -- 115
 preamble$ -- 1
-purify$ -- 13
+purify$ -- 76
 quote$ -- 0
-skip$ -- 30
+skip$ -- 187
 stack$ -- 0
-substring$ -- 53
-swap$ -- 4
+substring$ -- 299
+swap$ -- 36
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 30
-warning$ -- 0
-while$ -- 7
+type$ -- 174
+warning$ -- 6
+while$ -- 41
 width$ -- 0
-write$ -- 60
+write$ -- 170
+(There were 6 warnings)

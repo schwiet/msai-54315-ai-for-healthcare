@@ -81,6 +81,8 @@
 
 \section{Introduction}
 
+\section{Related Work}
+
 \section{Methodology}
 
 \subsection{Data Ingestion}
@@ -121,7 +123,25 @@ The \texttt{RELIGION} values were slightly simplified by collapsing all denomina
 
 \subsubsection{Reducing Dimensionality of Diagnoses}
 
-Dimensionality was a particular concern when handling the \texttt{DIAGNOSES\_ICD} table. There are $6984$ unique diagnoses in the \texttt{DIAGNOSES\_ICD} table of the possible $14,000+$ defined ICD9 Codes; if we were to one-hot encode the values as-is, our patient vectors would be too large and very sparse (mostly zeros). Before adding diagnoses to our patient vector, the size per row was currently sitting at $146$, so we looked for a way to avoid increasing the dimensions by an order of magnitude. For our purpose, we decided that it made sense to group the codes. For example, we collapsed "Type 1 Diabetes," "Type 2 Diabetes," and "Diabetes with Complications" into a single feature: "Diabetes." To achieve this, we utilized the Clinical Classifications Software (CCS) for ICD-9-CM, which collapses the $14,000$ ICD9 Codes ``into a smaller number of clinically meaningful categories that are sometimes more useful for presenting descriptive statistics than are individual ICD-9-CM codes`` \cite{hcup_ccs}.
+Dimensionality was a particular concern when handling the \texttt{DIAGNOSES\_ICD} table. There are $6984$ unique diagnoses in the \texttt{DIAGNOSES\_ICD} table of the possible $14,000+$ defined ICD9 Codes; if we were to one-hot encode the values as-is, our patient vectors would be too large and very sparse (mostly zeros). Before adding diagnoses to our patient vector, the size per row was currently sitting at $146$, so we looked for a way to avoid increasing the dimensions by an order of magnitude. For our purpose, we decided that it made sense to group the codes. For example, we collapsed "Type 1 Diabetes," "Type 2 Diabetes," and "Diabetes with Complications" into a single feature: "Diabetes." To achieve this, we utilized the Clinical Classifications Software (CCS) for ICD-9-CM, which collapses the $14,000$ ICD9 Codes ``into a smaller number of clinically meaningful categories that are sometimes more useful for presenting descriptive statistics than are individual ICD-9-CM codes`` \cite{hcup_ccs}. We merged the \texttt{DIAGNOSES\_ICD} table with the CCS crosswalk on the \texttt{ICD9\_CODE} column and filled missing values with "UNMAPPED" for the \texttt{CCS\_CATEGORY}. This reduced the number of unique diagnoses from $6984$ to $281$, dramatically reducing the dimensional impact of the feature.
+
+\subsection{Hybrid Vectorization}
+In the next stage, we combined the structured features with embeddings of discharge summary notes, made with the clinical BERT model  \cite{bioclinicalbert}, into a single vector for each patient.
+
+\subsubsection{NVIDIA DGX Spark}
+We had remote access to a NVIDIA DGX Spark \cite{dgx_spark} machine, which was used to perform the embedding generation in a GPU-accelerated environment. Being a recently-released platform, not all libraries were available in the standard Python environment, so to use `pytorch` \cite{pytorch_website} and `transformers` \cite{huggingface_transformers_docs} with access to the $6,144$ CUDA cores we ran our code in the NVIDIA-provided PyTorch docker image \cite{dgx_spark_docker_image} on the Spark to perform the embedding generation. The same environment was later used to run the retrieval and generative synthesis stages.
+
+\subsubsection{Clinical BERT Embeddings}
+We embedded discharge summaries only. The \texttt{NOTEEVENTS} table was streamed in 10{,}000 row chunks with pandas, filtered to \texttt{CATEGORY == "Discharge summary"}, and then grouped by \texttt{SUBJECT\_ID}, concatenating each patient’s summaries into one string separated by delimiters. We used Clinical BERT \cite{bioclinicalbert} via \texttt{transformers} and PyTorch \cite{pytorch_website}, tokenizing with \texttt{max\_length=512} and an overlapping stride of $100$ to handle long notes. We aggregated the individual summary representations of multiple text chunks into a single, comprehensive vector that represents the entire set discharge summaries for a patient. We iterated over patients, batched on GPU, collected embeddings and subject IDs, and saved them to file for use in the downstream retrieval and generative synthesis stages.
+
+
+\subsection{Retrieval Strategy}
+
+\subsection{Generative Synthesis}
+
+\section{Results}
+
+\section{Conclusion}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}

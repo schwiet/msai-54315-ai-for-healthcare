@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{1}
+\begin{thebibliography}{6}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -39,7 +39,7 @@
 \bibitem[{Agency for Healthcare Research and Quality}(2023)]%
         {hcup_ccs}
 \bibfield{author}{\bibinfo{person}{{Agency for Healthcare Research and Quality}}.} \bibinfo{year}{2023}\natexlab{}.
-\newblock \bibinfo{title}{{Clinical Classifications Software (CCS)}}.
+\newblock \bibinfo{booktitle}{\emph{{Clinical Classifications Software (CCS)}}}.
 \newblock
 \urldef\tempurl%
 \url{https://hcup-us.ahrq.gov/toolssoftware/ccs/ccs.jsp}
@@ -47,6 +47,71 @@
 \tempurl}
 \newblock
 \shownote{Accessed: 2025-12-06}.
+
+
+\bibitem[Alsentzer(nd)]%
+        {bioclinicalbert}
+\bibfield{author}{\bibinfo{person}{Emily Alsentzer}.} \bibinfo{year}{n.d.}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{Bio\_ClinicalBERT}}.
+\newblock
+\urldef\tempurl%
+\url{https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Accessed: 2025-12-06}.
+
+
+\bibitem[{Hugging Face}(nd)]%
+        {huggingface_transformers_docs}
+\bibfield{author}{\bibinfo{person}{{Hugging Face}}.} \bibinfo{year}{n.d.}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{Transformers Documentation}}.
+\newblock
+\urldef\tempurl%
+\url{https://huggingface.co/docs/transformers/en/index}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Accessed: 2025-12-06}.
+
+
+\bibitem[{NVIDIA Corporation}(2025a)]%
+        {dgx_spark_docker_image}
+\bibfield{author}{\bibinfo{person}{{NVIDIA Corporation}}.} \bibinfo{year}{2025}\natexlab{a}.
+\newblock \bibinfo{booktitle}{\emph{docker-compose.yml: DGX Spark Playbooks}}.
+\newblock
+\urldef\tempurl%
+\url{https://github.com/NVIDIA/dgx-spark-playbooks/blob/main/nvidia/pytorch-fine-tune/assets/docker-compose.yml}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Accessed: 2025-12-06}.
+
+
+\bibitem[{NVIDIA Corporation}(2025b)]%
+        {dgx_spark}
+\bibfield{author}{\bibinfo{person}{{NVIDIA Corporation}}.} \bibinfo{year}{2025}\natexlab{b}.
+\newblock \bibinfo{booktitle}{\emph{NVIDIA Spark}}.
+\newblock
+\urldef\tempurl%
+\url{https://build.nvidia.com/spark}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Accessed: 2025-12-06}.
+
+
+\bibitem[{PyTorch Foundation}(nd)]%
+        {pytorch_website}
+\bibfield{author}{\bibinfo{person}{{PyTorch Foundation}}.} \bibinfo{year}{n.d.}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{PyTorch}}.
+\newblock
+\urldef\tempurl%
+\url{https://pytorch.org/}
+\showURL{%
+\tempurl}
+\newblock
+\shownote{Accessed: 2025-02-14}.
 
 
 \end{thebibliography}
