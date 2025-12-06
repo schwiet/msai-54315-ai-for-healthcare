@@ -1,4 +1,5 @@
-\documentclass[acmtog]{acmart}
+% \documentclass[acmtog]{acmart}
+\documentclass[manuscript]{acmart}
 
 \ExplSyntaxOn
 \cs_new:Npn \ttbreakable {
@@ -89,7 +90,7 @@
 
 We started with the structured part of the patient representation by importing and merging the \texttt{PATIENTS} with \texttt{ADMISSIONS} tables on \texttt{SUBJECT\_ID} resulting in an entry for each admission that included basic patient demographic information found in the \texttt{PATIENTS} table: \texttt{GENDER} and \texttt{DOB}. From the Admissions table, the \texttt{ETHNICITY}, \texttt{INSURANCE}, \texttt{LANGUAGE}, \texttt{RELIGION}, \texttt{MARITAL\_STATUS} columns were chosen as demographic features. From the \texttt{table DIAGNOSES\_ICD} table, we imported \texttt{ICD9\_CODE} for later use.
 
-To prepare the unstructured Discharge summary notes for embedding, the \texttt{NOTEEVENTS} table was loaded by chunks with pandas and only rows with \texttt{CATEGORY} equal to "Discharge summary" were kept.
+To prepare the unstructured Discharge summary notes for embedding, the \texttt{NOTEEVENTS} table was loaded by chunks with \texttt{pandas} \cite{pandas_docs} and only rows with \texttt{CATEGORY} equal to "Discharge summary" were kept.
 
 \subsection{Feature Engineering}
 
@@ -115,11 +116,15 @@ All other values were non-null.
 
 \bigskip
 
-Instead of assigning each unique value an integer value - which might skew our patient search to associate two adjacent encodings (e.g. $Married = 1, Single = 2, ... Life Partner = 7$) when no such association is warranted - we used one-hot encoding (TODO: reference) to spread each unique value into a new column. If a patient's \texttt{MARITAL\_STATUS} value is "SINGLE", there is a $1$ for the value of the \texttt{SINGLE} column and a $0$ for each of the others.
+Instead of assigning each unique value an integer value - which might skew our patient search to associate two adjacent encodings (e.g. $Married = 1, Single = 2, ... Life Partner = 7$) when no such association is warranted - we used one-hot encoding \cite{kaggle_one_hot_rutecki} to spread each unique value into a new column. If a patient's \texttt{MARITAL\_STATUS} value is "SINGLE", there is a $1$ for the value of the \texttt{SINGLE} column and a $0$ for each of the others.
 
 \bigskip
 
 The \texttt{RELIGION} values were slightly simplified by collapsing all denominations of Christianity into a single "Christian" value. This traded some granularity in religious affiliation with the benefit of reducing the vector dimension impact of one-hot encoding, condensing twelve columns to one.
+
+\bigskip
+
+For the last step in processing the structured features, the numerical columns were scaled to be between $0$ and $1$ to prevent the embeddings from having a dominating effect on the model.
 
 \subsubsection{Reducing Dimensionality of Diagnoses}
 
@@ -129,10 +134,14 @@ Dimensionality was a particular concern when handling the \texttt{DIAGNOSES\_ICD
 In the next stage, we combined the structured features with embeddings of discharge summary notes, made with the clinical BERT model  \cite{bioclinicalbert}, into a single vector for each patient.
 
 \subsubsection{NVIDIA DGX Spark}
-We had remote access to a NVIDIA DGX Spark \cite{dgx_spark} machine, which was used to perform the embedding generation in a GPU-accelerated environment. Being a recently-released platform, not all libraries were available in the standard Python environment, so to use `pytorch` \cite{pytorch_website} and `transformers` \cite{huggingface_transformers_docs} with access to the $6,144$ CUDA cores we ran our code in the NVIDIA-provided PyTorch docker image \cite{dgx_spark_docker_image} on the Spark to perform the embedding generation. The same environment was later used to run the retrieval and generative synthesis stages.
+We had remote access to a NVIDIA DGX Spark \cite{dgx_spark} machine, which was used to perform the embedding generation in a GPU-accelerated environment. Being a recently-released platform, not all libraries were available in the standard Python environment, so to use \texttt{pytorch} \cite{pytorch_website} and `transformers` \cite{huggingface_transformers_docs} with access to the $6,144$ CUDA cores we ran our code in the NVIDIA-provided PyTorch docker image \cite{dgx_spark_docker_image} on the Spark to perform the embedding generation. The same environment was later used to run the retrieval and generative synthesis stages.
 
 \subsubsection{Clinical BERT Embeddings}
-We embedded discharge summaries only. The \texttt{NOTEEVENTS} table was streamed in 10{,}000 row chunks with pandas, filtered to \texttt{CATEGORY == "Discharge summary"}, and then grouped by \texttt{SUBJECT\_ID}, concatenating each patient’s summaries into one string separated by delimiters. We used Clinical BERT \cite{bioclinicalbert} via \texttt{transformers} and PyTorch \cite{pytorch_website}, tokenizing with \texttt{max\_length=512} and an overlapping stride of $100$ to handle long notes. We aggregated the individual summary representations of multiple text chunks into a single, comprehensive vector that represents the entire set discharge summaries for a patient. We iterated over patients, batched on GPU, collected embeddings and subject IDs, and saved them to file for use in the downstream retrieval and generative synthesis stages.
+We embedded discharge summaries only. The \texttt{NOTEEVENTS} table was streamed in 10{,}000 row chunks with \texttt{pandas}, filtered by \texttt{CATEGORY == "Discharge summary"}, and then grouped by \texttt{SUBJECT\_ID}, concatenating each patient’s summaries into one string separated by delimiters. We used Clinical BERT  via \texttt{transformers} and PyTorch, tokenizing with \texttt{max\_length=512} and an overlapping stride of $100$ to handle long notes. We iterated over patients, batched on GPU, collected embeddings and subject IDs, then aggregated the individual summary representations of multiple text chunks into a single, comprehensive vector that represents the entire set discharge summaries for a patient. Finally, we saved them to file for use in the downstream retrieval and generative synthesis stages. It took roughly 1 hour to embed the discharge summaries for all of the patients on the DGX Spark.
+
+\bigskip
+
+Our final patient vector consisted of our $426$-dimension structured features plus the $768$-dimensional vector from the clinical BERT embeddings.
 
 
 \subsection{Retrieval Strategy}

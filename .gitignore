@@ -20,3 +20,58 @@ Single_Level_CCS_2015/
 **/_cache/*
 
 assignment-7-high-risk/high-risk-report.pdf
+
+# Core LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.nav
+*.snm
+*.vrb
+
+# Bibliography tools
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+
+# Glossaries & Indexing
+*.glo
+*.gls
+*.glg
+*.ist
+*.acn
+*.acr
+*.alg
+*.xdy
+
+# LaTeX ↔ Editors support
+*.pyg              # minted
+*_minted*          # minted cache folder
+*.xdv              # XeLaTeX intermediate
+*.dvi
+*.ps
+
+# Intermediate files for packages
+*.auxlock
+*.mw               # metawidget
+*.tdo              # Todo notes package
+*.idx
+*.ilg
+*.ind
+
+# Figures auto-generated
+*.eps
+*.svg
+*.pdf_tex          # Inkscape LaTeX export aux file
+
+# Latexmk & arara
+*.latexmk
+*.makefile
