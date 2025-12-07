@@ -26,7 +26,7 @@ def parse_query(query, models, ccs_descriptions):
     - raw_query: the original query for embedding
     """
     
-    # First, check for explicit Subject ID in the query
+    # first, check for explicit Subject ID in the query
     subject_id_match = re.search(
         r'\b(?:subject[_\s]*id|patient[_\s]*id|subject|patient)[:\s#]*(\d+)\b', 
         query, 
@@ -35,15 +35,15 @@ def parse_query(query, models, ccs_descriptions):
     if subject_id_match:
         subject_id = int(subject_id_match.group(1))
     else:
-        # Also check for bare numbers that might be IDs
+        # also check for bare numbers that might be IDs
         bare_id_match = re.search(r'\bid\s*[:=]?\s*(\d+)\b', query, re.IGNORECASE)
         subject_id = int(bare_id_match.group(1)) if bare_id_match else None
     
-    # Sample of diagnosis categories for context (not all 285)
+    # sample of diagnosis categories for context (not all 285)
     sample_diagnoses = ccs_descriptions[:50] if len(ccs_descriptions) > 50 else ccs_descriptions
     diagnoses_context = ", ".join(sample_diagnoses[:30])
     
-    # Use LLM to extract filter parameters
+    # use LLM to extract filter parameters
     extraction_prompt = f"""Extract structured filters from this patient search query. Return ONLY valid JSON.
 
 Query: "{query}"
@@ -73,10 +73,14 @@ Example queries and responses:
 
 JSON response:"""
 
+    # TODO: try adding system role to improve performance
+    # TODO: try moving examples to agent role to see if results improve
     messages = [
         {"role": "user", "content": extraction_prompt}
     ]
     
+    # this runs the messages through the LLM's chat template using the
+    # tokenizer, creating input_ids suitable for model input (as a tensor)
     input_ids = models['llm_tokenizer'].apply_chat_template(
         messages,
         tokenize=True,
@@ -92,15 +96,15 @@ JSON response:"""
             attention_mask=attention_mask,
             pad_token_id=models['llm_tokenizer'].eos_token_id,
             max_new_tokens=200,
-            do_sample=False,  # Deterministic for parsing
+            do_sample=False,  # deterministic for parsing
             temperature=0.1
         )
     
     response = models['llm_tokenizer'].decode(outputs[0][input_ids.shape[1]:], skip_special_tokens=True)
     
-    # Parse the JSON response
+    # parse the response
     try:
-        # Find JSON in response
+        # find JSON in response
         json_match = re.search(r'\{[^{}]*\}', response, re.DOTALL)
         if json_match:
             parsed = json.loads(json_match.group())
@@ -110,6 +114,8 @@ JSON response:"""
         parsed = {}
     
     return {
+        # TODO: should I also try to extract subject ID with LLM if not already
+        # determined?
         'subject_id': subject_id,
         'gender': parsed.get('gender'),
         'age_min': parsed.get('age_min'),

@@ -145,19 +145,33 @@ Our final patient vector consisted of our $426$-dimension structured features pl
 
 
 \subsection{Retrieval Strategy}
-With the patient vectors in their multimodal format, it was now possible to perform patient-to-patient similarity searches. Given one patient's vector, we could find the $k$ nearest neighbors in the patient space. We used the \texttt{sklearn} library \cite{scikitlearn_neighbors_docs} to perform the nearest neighbor search with the cosine distance metric.
+With the patient vectors in their multimodal format, we are able to perform patient-to-patient similarity searches. Given one patient's vector, we could find the $k$ nearest neighbors in the patient space. We used the \texttt{sklearn} library \cite{scikitlearn_neighbors_docs} to perform the nearest neighbor search with the cosine distance metric.
 
 
 \begin{verbatim}
---- Patients similar to 19 ---
-Match #1: Patient 19835 (Similarity: 76.3%)
-Match #2: Patient 3340 (Similarity: 71.5%)
-Match #3: Patient 60423 (Similarity: 71.4%)
-Match #4: Patient 29813 (Similarity: 68.4%)
-Match #5: Patient 1909 (Similarity: 68.3%)
+Patients similar to 19:
+  Match #1: Patient 19835 (Similarity: 76.3%)
+  Match #2: Patient 3340 (Similarity: 71.5%)
+  Match #3: Patient 60423 (Similarity: 71.4%)
+  Match #4: Patient 29813 (Similarity: 68.4%)
+  Match #5: Patient 1909 (Similarity: 68.3%)
 \end{verbatim}
 
-For the authors, this was the stage where their understanding of the RAG pipeline and the retrieval strategy became more concrete.
+For the authors, this was the stage where their understanding of the RAG pipeline and the retrieval strategy became more concrete. The goal of this project was to allow a user to intuitively query the database for patients similar to a given patient; we want to avoid forcing the user to use a specific query format, so we started by accepting a plain-text query and manually extracting anything that looked like an explicit subject ID, if found, we used that patient's vector to search for nearest neighbors. For use cases like "Find patients similar to patient 19", this worked well, but for any query more complex than that, it was clear that we needed to use a more sophisticated approach.
+
+We decided to use an LLM to try to extract structured parameters from the query. We wrote a function form a prompt for the LLM, directing it to extract a set of parameters from the query and return them in JSON format. This, we discovered, is not an exact science; we iterated on this prompt many times as we found cases where the LLM made mistakes extracting the parameters we wanted. Frankly, this is the piece we have continued to try to revise up until the final submission of this report.
+
+\subsubsection{Learning about the Modality Gap the Hard Way}
+
+We quickly discovered that there is a well-known problem referred to as the "Modality Gap" \cite{arxiv_2507_19054}, where embeddings from different data types (e.g., unstructured text, tabular data) are misaligned in vector space. We had spent a significant extent of our Feature Engineering efforts to create a hybrid patient representation that combined the structured (tabular) features with the embeddings of the discharge summaries (unstructured text).
+
+But we could not actually effectively utilize any queries that did not include a subject ID because of the extra $426$ dimensions we had added from the structured features. When a query was processed with no subject ID, we could not simply retireve a multimodal patient vector to search with. Instead, we could only embed the query, using the same model as the patients' discharge summaries. The clinical BERT embeddings had $768$ dimensions, so we could not simply search the space of the multimodal patient representations; padding the query embeddings with zeros would introduce a large amount of noise.
+
+\subsubsection{Creating a Semantic Router}
+
+\begin{verbatim}
+
+\end{verbatim}
 
 \subsection{Generative Synthesis}
 
