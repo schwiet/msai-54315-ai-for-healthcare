@@ -15,14 +15,14 @@ def load_data():
     
     data = {}
     
-    # 1. Load patient embeddings (text-only vectors)
+    # load patient embeddings (text-only vectors)
     print("   📄 Loading patient embeddings...")
     embeddings_path = os.path.join(DATA_DIR, "patient_embeddings.csv")
     if not os.path.exists(embeddings_path):
         raise FileNotFoundError(f"Could not find {embeddings_path}! Run note-events-embeddings.py first.")
     data['embeddings'] = pd.read_csv(embeddings_path)
     
-    # 2. Load multi-modal vectors if available
+    # load multi-modal vectors if available
     multimodal_path = os.path.join(DATA_DIR, "multimodal_vectors.csv")
     if os.path.exists(multimodal_path):
         print("   🔮 Loading multi-modal vectors...")
@@ -31,7 +31,7 @@ def load_data():
         print("   ⚠️  Multi-modal vectors not found. Run main.py to generate them.")
         data['multimodal'] = None
     
-    # 3. Load structured features for filtering
+    # load structured features for filtering
     structured_path = os.path.join(DATA_DIR, "structured_features.csv")
     if os.path.exists(structured_path):
         print("   📊 Loading structured features...")
@@ -39,17 +39,17 @@ def load_data():
     else:
         data['structured'] = None
     
-    # 4. Load raw MIMIC-III tables for filtering
+    # load raw MIMIC-III tables for filtering
     print("   📋 Loading MIMIC-III tables...")
     data['patients'] = pd.read_csv(os.path.join(DATA_DIR, "PATIENTS.csv.gz"))
     data['admissions'] = pd.read_csv(os.path.join(DATA_DIR, "ADMISSIONS.csv.gz"))
     data['diagnoses'] = pd.read_csv(os.path.join(DATA_DIR, "DIAGNOSES_ICD.csv.gz"))
     
-    # 5. Load CCS crosswalk for diagnosis mapping
+    # load CCS crosswalk for diagnosis mapping
     if os.path.exists(CCS_CROSSWALK_PATH):
         print("   🏥 Loading CCS diagnosis crosswalk...")
         ccs_crosswalk = pd.read_csv(CCS_CROSSWALK_PATH, skiprows=1)
-        # Clean up the columns
+        # clean up the columns
         ccs_map = ccs_crosswalk[[
             "'ICD-9-CM CODE'", 
             "'CCS CATEGORY'", 
@@ -61,13 +61,13 @@ def load_data():
                 ccs_map[col] = ccs_map[col].astype(str).str.strip("'\"").str.strip()
         data['ccs_map'] = ccs_map
         
-        # Get unique CCS descriptions for query parsing
+        # get unique CCS descriptions for query parsing
         data['ccs_descriptions'] = ccs_map['CCS_DESCRIPTION'].dropna().unique().tolist()
     else:
         data['ccs_map'] = None
         data['ccs_descriptions'] = []
     
-    # 6. Load clinical notes text
+    # load clinical notes text
     print("   📝 Reading clinical notes (this may take a moment)...")
     chunksize = 20000
     chunks = []
@@ -86,7 +86,7 @@ def build_indices(data):
     """Build search indices from loaded data."""
     indices = {}
     
-    # 1. Build embedding index (text-only for filtered search)
+    # build embedding index (text-only for filtered search)
     print("   🔍 Building embedding search index...")
     df_embeddings = data['embeddings']
     feature_cols = [c for c in df_embeddings.columns if c != 'SUBJECT_ID']
@@ -98,7 +98,7 @@ def build_indices(data):
     knn_embeddings.fit(embedding_matrix)
     indices['knn_embeddings'] = knn_embeddings
     
-    # 2. Build multi-modal index if available
+    # build multi-modal index if available
     if data['multimodal'] is not None:
         print("   🔮 Building multi-modal search index...")
         df_multimodal = data['multimodal']
@@ -111,7 +111,7 @@ def build_indices(data):
         knn_multimodal.fit(multimodal_matrix)
         indices['knn_multimodal'] = knn_multimodal
     
-    # 3. Create master database with text
+    # create master database with text
     print("   📚 Building master patient database...")
     master_db = pd.merge(df_embeddings, data['notes'], on='SUBJECT_ID', how='inner')
     indices['master_db'] = master_db

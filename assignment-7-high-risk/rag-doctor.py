@@ -106,7 +106,7 @@ def run_rag_query(query, data, indices, models):
 
 def main():
     """Main entry point for the RAG Doctor."""
-    # Load everything
+    # load everything
     data = load_data()
     indices = build_indices(data)
     models = load_models()

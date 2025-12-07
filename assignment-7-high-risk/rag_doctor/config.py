@@ -26,6 +26,9 @@ DEFAULT_K_NEIGHBORS = 5
 KNN_INDEX_NEIGHBORS = 10
 
 # Text processing
-MAX_CONTEXT_LENGTH = 3000
+# NOTE: this corresponds to Mistral 7B's v0.2 context window length
+#       https://obot.ai/resources/learning-center/mistral-7b-instruct#h-mistral-7b-instruct-v0-2
+MAX_CONTEXT_LENGTH = 30000
+# this is used for query embedding with BERT. I'm not totally sure it is sufficient
 MAX_TOKEN_LENGTH = 512
 

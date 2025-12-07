@@ -201,13 +201,12 @@ Our modular approach first classifies user intent based on the query. If the que
 
 Once the router has identified the search space most appropriate to address the query's intent, we embed the query and search the filtered space using only the embeddings from the discharge summaries. These queries would not be able to utilize the multimodal patient representations, but by reducing their search space we attempted to improve the chances of finding relevant result.
 
-
-\begin{verbatim}
-
-\end{verbatim}
-
 \subsection{Generative Synthesis}
+The final stage in our RAG pipeline involved feeding the Discharge Summary of the patients found in the retrieval stage to the LLM to generate a response to the query, providing a clinical explanation of why the returned patients are good matches for the query. The goal is to synthesize clinical details scattered throughout the notes text into a coherent answer, rather than just return a wall of text.
 
+Here, the LLM choice dictates constraints on the parameters used, including the context window length. Because the notes can be quite long and we were using the Mistral 7B model, we set the context window length to 30{,}000 tokens, based on the model's documentation \cite{obot_mistral7b_instruct}.
+
+Because we used the DGX Spark, we had access to a large amount of memory and decided to opt for percision of performance by not using 4-bit quantization.
 
 \section{Results}
 
