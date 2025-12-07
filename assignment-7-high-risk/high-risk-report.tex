@@ -167,7 +167,10 @@ We quickly discovered that there is a well-known problem referred to as the "Mod
 
 But we could not actually effectively utilize any queries that did not include a subject ID because of the extra $426$ dimensions we had added from the structured features. When a query was processed with no subject ID, we could not simply retireve a multimodal patient vector to search with. Instead, we could only embed the query, using the same model as the patients' discharge summaries. The clinical BERT embeddings had $768$ dimensions, so we could not simply search the space of the multimodal patient representations; padding the query embeddings with zeros would introduce a large amount of noise.
 
-\subsubsection{Creating a Semantic Router}
+\subsubsection{Creating a Router}
+It became clear that our retrieval strategy would need to be made modular, so it could handle choosing an appropriate search strategy based on the query. Further research in the field of Usability would be required to create an ideal router, one that could interpret the query and determine the most effective way to search the dataset, but we set out to establish a baseline that could be used to create a more sophisticated router in the future.
+
+Our modular approach first classifies user intent based on the query. If the query includes a subject ID, we treat the query as a specific user lookup and use the multimodal patient vector to search for nearest neighbors. If the query does not include a subject ID, we construct a prompt for the LLM to extract structured parameters from the query. For any features found in the query, the search space if filtered to only include patients that match the query parameters. Finally, we embed the query and search the filtered space using only the embeddings from the discharge summaries.
 
 \begin{verbatim}
 
