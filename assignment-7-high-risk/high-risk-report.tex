@@ -1,5 +1,6 @@
 % \documentclass[acmtog]{acmart}
 \documentclass[manuscript]{acmart}
+\usepackage{listings}
 
 \ExplSyntaxOn
 \cs_new:Npn \ttbreakable {
@@ -74,6 +75,13 @@
 \keywords{Machine Learning, Natural Language Processing, RAG, Healthcare}
 
 \received{8 December 2025}
+
+\lstset{
+    basicstyle=\fontfamily{zi4}\selectfont\small,
+    breaklines=true,
+    breakatwhitespace=true,
+    columns=fullflexible
+}
 
 %%
 %% This command processes the author and affiliation and title
@@ -157,20 +165,42 @@ Patients similar to 19:
   Match #5: Patient 1909 (Similarity: 68.3%)
 \end{verbatim}
 
-For the authors, this was the stage where their understanding of the RAG pipeline and the retrieval strategy became more concrete. The goal of this project was to allow a user to intuitively query the database for patients similar to a given patient; we want to avoid forcing the user to use a specific query format, so we started by accepting a plain-text query and manually extracting anything that looked like an explicit subject ID, if found, we used that patient's vector to search for nearest neighbors. For use cases like "Find patients similar to patient 19", this worked well, but for any query more complex than that, it was clear that we needed to use a more sophisticated approach.
-
-We decided to use an LLM to try to extract structured parameters from the query. We wrote a function form a prompt for the LLM, directing it to extract a set of parameters from the query and return them in JSON format. This, we discovered, is not an exact science; we iterated on this prompt many times as we found cases where the LLM made mistakes extracting the parameters we wanted. Frankly, this is the piece we have continued to try to revise up until the final submission of this report.
+For the authors, this was the stage where their understanding of the RAG pipeline and the retrieval strategy became more concrete. The goal of this project was to allow a user to intuitively query the database for patients similar to a given patient; we want to avoid forcing the user to use a specific query format, but so far we had only a system that accpeted an explicit subject ID. If found, we used that patient's vector to search for nearest neighbors. For use cases like "Find patients similar to patient 19", this worked well, but for any query more complex than that, it was clear that we needed to use a more sophisticated approach.
 
 \subsubsection{Learning about the Modality Gap the Hard Way}
 
-We quickly discovered that there is a well-known problem referred to as the "Modality Gap" \cite{arxiv_2507_19054}, where embeddings from different data types (e.g., unstructured text, tabular data) are misaligned in vector space. We had spent a significant extent of our Feature Engineering efforts to create a hybrid patient representation that combined the structured (tabular) features with the embeddings of the discharge summaries (unstructured text).
+We quickly discovered that there is a well-known challenge referred to as the "Modality Gap" \cite{arxiv_2203_02053}, where embeddings from different data types (e.g., unstructured text, tabular data) are misaligned in vector space. We had spent a significant extent of our Feature Engineering efforts to create a hybrid patient representation that combined the structured (tabular) features with the embeddings of the discharge summaries (unstructured text).
 
-But we could not actually effectively utilize any queries that did not include a subject ID because of the extra $426$ dimensions we had added from the structured features. When a query was processed with no subject ID, we could not simply retireve a multimodal patient vector to search with. Instead, we could only embed the query, using the same model as the patients' discharge summaries. The clinical BERT embeddings had $768$ dimensions, so we could not simply search the space of the multimodal patient representations; padding the query embeddings with zeros would introduce a large amount of noise.
+But the initial implementation of our patient retrieval simply embedded the query with the clinical BERT embedding model and produced a $768$-dimension vector. So, we could not actually effectively utilize the extra $426$-dimensions we had added from the structured features. The query embedding was suited only for searching the space of the discharge summary embeddings; padding the query embeddings with zeros would introduce a large amount of noise. We wanted a tool that could leverage the tabular data as well as the text data, since the structured data had important signals that we expected to be useful for the retrieval process.
 
 \subsubsection{Creating a Router}
-It became clear that our retrieval strategy would need to be made modular, so it could handle choosing an appropriate search strategy based on the query. Further research in the field of Usability would be required to create an ideal router, one that could interpret the query and determine the most effective way to search the dataset, but we set out to establish a baseline that could be used to create a more sophisticated router in the future.
+It became clear that our retrieval strategy would need to be made modular, so it could handle choosing an appropriate search strategy based on the query. We decided to incorporate the LLM as a prestep to the retrieval process, to handle the query in a more flexible way. We effectively used the LLM as a routing layer, to guide the retrieval process based on the intent of the query. 
 
-Our modular approach first classifies user intent based on the query. If the query includes a subject ID, we treat the query as a specific user lookup and use the multimodal patient vector to search for nearest neighbors. If the query does not include a subject ID, we construct a prompt for the LLM to extract structured parameters from the query. For any features found in the query, the search space if filtered to only include patients that match the query parameters. Finally, we embed the query and search the filtered space using only the embeddings from the discharge summaries.
+This, we discovered, is not an exact science; designing a robust router presented significant challenges in prompt engineering and intent classification. In evaluating our RAG we continue to find cases where either the LLM makes mistakes extracting the parameters we want or we aren't supporting intuitive use cases. Frankly, this is the piece we have continued to try to revise up until the final submission of this report. Further research, both in the field of Usability Design and in the domain of existing work on RAG systems, would be required to create an ideal router, one that could interpret the query and determine the most effective way to search the dataset, but we set out to establish a baseline that could be used to create a more sophisticated router in the future.
+
+Our modular approach first classifies user intent based on the query. If the query includes a subject ID, we treat the query as a specific user lookup and use the multimodal patient vector to search for nearest neighbors. If the query does not include a subject ID, we extract structured parameters from the query. For any features found in the query, the search space is filtered to only include patients that match the query parameters. To accomplish the search space filtering, we wrote a function that forms a prompt for the LLM, directing it to extract a set of parameters from the query and return them in JSON format.
+
+\begin{lstlisting}
+  Extract structured filters from this patient search query. Return ONLY valid JSON.
+
+  Query: "{query}"
+
+  Available diagnosis categories (examples): {diagnoses_context}
+
+  Return JSON with these fields (use null for missing values):
+{{
+    "gender": "M" or "F" or null,
+    "age_min": integer or null,
+    "age_max": integer or null,  
+    "ethnicity": string or null (ONLY race/ethnic background like "WHITE", "BLACK/AFRICAN AMERICAN", "ASIAN - CHINESE"),
+    "religion": string or null (religious affiliation like "CHRISTIAN", "JEWISH", "MUSLIM", "BUDDHIST", "NOT SPECIFIED"),
+    "diagnoses": [list of diagnosis category names that match the query] or []
+}}
+  ... # truncated
+\end{lstlisting}
+
+Once the router has identified the search space most appropriate to address the query's intent, we embed the query and search the filtered space using only the embeddings from the discharge summaries. These queries would not be able to utilize the multimodal patient representations, but by reducing their search space we attempted to improve the chances of finding relevant result.
+
 
 \begin{verbatim}
 

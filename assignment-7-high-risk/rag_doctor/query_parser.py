@@ -60,8 +60,8 @@ Return JSON with these fields (use null for missing values):
     "gender": "M" or "F" or null,
     "age_min": integer or null,
     "age_max": integer or null,  
-    "ethnicity": string or null (ONLY race/ethnic background like "WHITE", "BLACK", "ASIAN", "HISPANIC"),
-    "religion": string or null (religious affiliation like "CHRISTIAN", "CATHOLIC", "JEWISH", "MUSLIM", "BUDDHIST"),
+    "ethnicity": string or null (ONLY race/ethnic background like "WHITE", "BLACK/AFRICAN AMERICAN", "ASIAN - CHINESE"),
+    "religion": string or null (religious affiliation like "CHRISTIAN", "JEWISH", "MUSLIM", "BUDDHIST", "NOT SPECIFIED"),
     "diagnoses": [list of diagnosis category names that match the query] or []
 }}
 
