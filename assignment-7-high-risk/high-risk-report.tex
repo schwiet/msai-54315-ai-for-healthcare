@@ -69,7 +69,7 @@
 }
 
 \begin{abstract}
-  TODO: Add abstract
+  Clinical notes contain rich data, but it is unstructured and difficult to query. Existing search strategies are either too rigid, requiring a specific query format, or too general, returning values with poor contextual relevance. This paper explores the utilization of a Large Language Model (LLM) via a Retrieval-Augmented Generation (RAG) system to allow a user to query the database for patients similar to a given patient using a natural language query.  We discuss the use of a hybrid retrieval routing strategy to determine an effective retrieval search space. We create multi-modal patient vectors by combining structured features (tabular data) with embeddings of the patient's discharge summary notes (unstructured text), using a clinical BERT model to embed the query and the patient notes in a GPU-accelerated environment (utilizing the NVIDIA DGX Spark), and a cosine distance metric to find the nearest neighbors. We then use the LLM to generate a response to the query, providing a clinical explanation of why the returned patients are good matches for the query. The resulting system shows promise for improving the ergonomics of clinical patient search, but requires further refinement to ensure meaningful results are consistently returned.
 \end{abstract}
 
 \keywords{Machine Learning, Natural Language Processing, RAG, Healthcare}
@@ -89,6 +89,15 @@
 \maketitle
 
 \section{Introduction}
+When assessing a patient, clinicians draw on their experience and knowledge of previous patients. They develop intuitions based on experience and memory to guide their decision-making. Today, this direct experience can be supplemented by access to broad sources of information, but the interface to sources requires distinct, rigid and unintuitive skills, such as querying a database, using a proprietary reference tool, or interpreting complex statistical analyses. The goal of this project is to explore the use of recent developments in machine learning, specifically the use of Large Language Models (LLMs) via a Retrieval-Augmented Generation (RAG) system, to provide a more natural interface to these resources. We want to provide a tool that extends a clinician's clinical expertise to the best available evidence by the same intuitive means they use to draw upon their own clinical experience, by allowing them to ask questions like "how is this patient similar to those I have seen in the past?"
+
+As an attempt to address these challenges, we present a hybrid RAG system for clinical case retrieval. Our specific contributions are as follows:
+
+\begin{itemize}
+  \item A RAG application applied to a multi-modal patient representation that combines structured features and unstructured text from the MIMIC-III database.
+  \item A hybrid retrieval routing strategy that leverages the combination of an embedding BERT model, LLM and database filtering to facilitate a natural interface to the database.
+  \item A scalable implementation, built with the NVIDIA DGX Spark, to perform the embedding generation in a GPU-accelerated environment.
+\end{itemize}
 
 \section{Related Work}
 
@@ -204,11 +213,28 @@ Once the router has identified the search space most appropriate to address the 
 \subsection{Generative Synthesis}
 The final stage in our RAG pipeline involved feeding the Discharge Summary of the patients found in the retrieval stage to the LLM to generate a response to the query, providing a clinical explanation of why the returned patients are good matches for the query. The goal is to synthesize clinical details scattered throughout the notes text into a coherent answer, rather than just return a wall of text.
 
-Here, the LLM choice dictates constraints on the parameters used, including the context window length. Because the notes can be quite long and we were using the Mistral 7B model, we set the context window length to 30{,}000 tokens, based on the model's documentation \cite{obot_mistral7b_instruct}.
+Here, the LLM choice dictates constraints on the parameters used, including the context window length. Because the notes can be quite long and we were using the Mistral 7B model, we set a conservative context window length to ~22{,}000 words, based on the model's documentation \cite{obot_mistral7b_instruct}.
 
 Because we used the DGX Spark, we had access to a large amount of memory and decided to opt for percision of performance by not using 4-bit quantization.
 
+For the answer prompts, we provided a system role to guide the LLM's response, providing a clinical explanation of why the returned patients are good matches for the query.
+
+\begin{quote}
+  "role": "system", 
+  "content": "You are an expert medical AI. Answer based ONLY on the provided patient history. Be concise and clinically relevant. Provide insights into why the provided PATIENT HISTORY is a good match for the QUESTION."
+
+\end{quote}
+
+The prompt in the user role contained the (potentially truncated) Discharge Summary of the patients found in the retrieval stage and the query.
+
+\begin{lstlisting}
+  "role": "user", 
+  "content": "--- PATIENT HISTORY ---\n<notes>\n\nQUESTION: <query>"
+\end{lstlisting}
+
 \section{Results}
+
+TODO: discuss tuning context window for discharge notes to address "Lost in the Middle" problem. Look more into The "Needle in a Haystack" Test
 
 \section{Conclusion}
 

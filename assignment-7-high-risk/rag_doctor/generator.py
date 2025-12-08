@@ -24,7 +24,7 @@ def generate_answer(query, patient_text, models):
     messages = [
         {
             "role": "system", 
-            "content": "You are an expert medical AI. Answer based ONLY on the provided patient history. Be concise and clinically relevant."
+            "content": "You are an expert medical AI. Answer based ONLY on the provided patient history. Be concise and clinically relevant. Provide insights into why the provided PATIENT HISTORY is a good match for the QUESTION."
         },
         {
             "role": "user", 
