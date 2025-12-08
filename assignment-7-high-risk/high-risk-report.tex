@@ -1,5 +1,5 @@
-% \documentclass[acmtog]{acmart}
-\documentclass[manuscript]{acmart}
+\documentclass[acmtog]{acmart}
+% \documentclass[manuscript]{acmart}
 \usepackage{listings}
 
 \ExplSyntaxOn
@@ -100,16 +100,33 @@ As an attempt to address these challenges, we present a hybrid RAG system for cl
 \end{itemize}
 
 \section{Related Work}
+Prior work relevant to our project covers three fundamental areas: RAG frameworks, clinical-specific embedding models, and the geometry of multi-modal representation for retrieval. RAG frameworks motivate our use of retrieval to provide context to the LLM responses in patient-level evidence, while Clinical BERT models provide clinically meaningful embeddings of both discharge summaries and queries. Finally, recent work on the modality gap provides insight into the limitations of simple multi-modal retrieval and motivates design iterations in our retrieval strategy, even beyond the scope of this paper.
+
+\subsection{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}
+
+This is the seminal paper introducing the concept of Retrieval-Augmented Generation (RAG). In this method, a corpus of text is retrieved and provided as context to the LLM to help it generate a response. They demonstrate that this approach can improve the accuracy of knowledge-intensive NLP tasks, when compared to standard LLMs. \cite{lewis2020rag} We are leveraging this general approach in our project to help give the LLM patients that are similar before asking it to generate an analysis.
+
+\subsection{Publicly Available Clinical BERT Embeddings}
+The authors created publicly available BERT-based embedding models trained specifically on clinical text. They showed empirically that these domain-specific models gain substantial performance improvements on clinically-relevant tasks. We are using the Clinical BERT model \cite{alsentzer2019clinicalbert} in our paper to embed the discharge summary notes and the queries provided by the user.
+
+\subsection{Mind the Gap: Understanding the Modality Gap in Multi-modal Contrastive Representation Learning}
+This paper offers a three part explanation of how the combination of embeddings from different data types (e.g., unstructured text, tabular data) are misaligned in vector space, ending up consisting of two clusters, one for each modality \cite{liang2022modalitygap}. We are using this understanding to guide critical design decisions in the retrieval stage, including the use of a hybrid retrieval strategy.
 
 \section{Methodology}
+To build a system capable of usefully answering open-ended queries about patients similarity, we gradually transform raw MIMIC-III data into a multimodal search space usable by an LLM. We ingest and clean structured and unstructured data, engineer a subset of interpretable features, and embed clinical notes through clinical BERT, generating patient-level representations on the DGX Spark. The retrieval mechanism adapts to the user{’}s query through an LLM router. These steps together form a RAG pipeline that supports patient retrieval with a generative clinical explanation.
 
-\subsection{Data Ingestion}
+\begin{figure}[hbpt]
+  \centering
+  \includegraphics[width=\linewidth]{./methodology-figure.png}
+  \caption{The methodology in 4 stages.}
+  \label{fig:methodology}
+\end{figure}
+
+\subsection{Data Ingestion \& Feature Engineering}
 
 We started with the structured part of the patient representation by importing and merging the \texttt{PATIENTS} with \texttt{ADMISSIONS} tables on \texttt{SUBJECT\_ID} resulting in an entry for each admission that included basic patient demographic information found in the \texttt{PATIENTS} table: \texttt{GENDER} and \texttt{DOB}. From the Admissions table, the \texttt{ETHNICITY}, \texttt{INSURANCE}, \texttt{LANGUAGE}, \texttt{RELIGION}, \texttt{MARITAL\_STATUS} columns were chosen as demographic features. From the \texttt{table DIAGNOSES\_ICD} table, we imported \texttt{ICD9\_CODE} for later use.
 
 To prepare the unstructured Discharge summary notes for embedding, the \texttt{NOTEEVENTS} table was loaded by chunks with \texttt{pandas} \cite{pandas_docs} and only rows with \texttt{CATEGORY} equal to "Discharge summary" were kept.
-
-\subsection{Feature Engineering}
 
 Processing was necessary for the structured features to prepare them for the hybrid patient representation, where we grouped everything by \texttt{SUBJECT\_ID} to create one vector per patient (combining their notes with the structured data).
 
@@ -178,7 +195,7 @@ For the authors, this was the stage where their understanding of the RAG pipelin
 
 \subsubsection{Learning about the Modality Gap the Hard Way}
 
-We quickly discovered that there is a well-known challenge referred to as the "Modality Gap" \cite{arxiv_2203_02053}, where embeddings from different data types (e.g., unstructured text, tabular data) are misaligned in vector space. We had spent a significant extent of our Feature Engineering efforts to create a hybrid patient representation that combined the structured (tabular) features with the embeddings of the discharge summaries (unstructured text).
+We quickly discovered that there is a well-known challenge referred to as the "Modality Gap" \cite{liang2022modalitygap}, where embeddings from different data types (e.g., unstructured text, tabular data) are misaligned in vector space. We had spent a significant extent of our Feature Engineering efforts to create a hybrid patient representation that combined the structured (tabular) features with the embeddings of the discharge summaries (unstructured text).
 
 But the initial implementation of our patient retrieval simply embedded the query with the clinical BERT embedding model and produced a $768$-dimension vector. So, we could not actually effectively utilize the extra $426$-dimensions we had added from the structured features. The query embedding was suited only for searching the space of the discharge summary embeddings; padding the query embeddings with zeros would introduce a large amount of noise. We wanted a tool that could leverage the tabular data as well as the text data, since the structured data had important signals that we expected to be useful for the retrieval process.
 
