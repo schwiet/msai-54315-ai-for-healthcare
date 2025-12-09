@@ -113,7 +113,7 @@ The authors created publicly available BERT-based embedding models trained speci
 This paper offers a three part explanation of how the combination of embeddings from different data types (e.g., unstructured text, tabular data) are misaligned in vector space, ending up consisting of two clusters, one for each modality \cite{liang2022modalitygap}. We are using this understanding to guide critical design decisions in the retrieval stage, including the use of a hybrid retrieval strategy.
 
 \section{Methodology}
-To build a system capable of usefully answering open-ended queries about patients similarity, we gradually transform raw MIMIC-III data into a multimodal search space usable by an LLM. We ingest and clean structured and unstructured data, engineer a subset of interpretable features, and embed clinical notes through clinical BERT, generating patient-level representations on the DGX Spark. The retrieval mechanism adapts to the user{’}s query through an LLM router. These steps together form a RAG pipeline that supports patient retrieval with a generative clinical explanation.
+To build a system capable of usefully answering open-ended queries about patients similarity, we gradually transform raw MIMIC-III data into a multi-modal search space usable by an LLM. We ingest and clean structured and unstructured data, engineer a subset of interpretable features, and embed clinical notes through clinical BERT, generating patient-level representations on the DGX Spark. The retrieval mechanism adapts to the user{’}s query through an LLM router. These steps together form a RAG pipeline that supports patient retrieval with a generative clinical explanation.
 
 \begin{figure}[hbpt]
   \centering
@@ -175,11 +175,11 @@ We embedded discharge summaries only. The \texttt{NOTEEVENTS} table was streamed
 
 \bigskip
 
-Our final patient vector consisted of our $426$-dimension structured features plus the $768$-dimensional vector from the clinical BERT embeddings. Our hypbrid patient representation had $41{,}117$ patients, each with a combined vector dimension of $1{,}194$.
+Our final patient vector consisted of our $426$-dimension structured features plus the $768$-dimensional vector from the clinical BERT embeddings. Our hybrid patient representation had $41{,}117$ patients, each with a combined vector dimension of $1{,}194$.
 
 
 \subsection{Retrieval Strategy}
-With the patient vectors in their multimodal format, we are able to perform patient-to-patient similarity searches. Given one patient's vector, we could find the $k$ nearest neighbors in the patient space. We used the \texttt{sklearn} library \cite{scikitlearn_neighbors_docs} to perform the nearest neighbor search with the cosine distance metric.
+With the patient vectors in their multi-modal format, we are able to perform patient-to-patient similarity searches. Given one patient's vector, we could find the $k$ nearest neighbors in the patient space. We used the \texttt{sklearn} library \cite{scikitlearn_neighbors_docs} to perform the nearest neighbor search with the cosine distance metric.
 
 
 \begin{verbatim}
@@ -191,7 +191,7 @@ Patients similar to 19:
   Match #5: Patient 1909 (Similarity: 68.3%)
 \end{verbatim}
 
-For the authors, this was the stage where their understanding of the RAG pipeline and the retrieval strategy became more concrete. The goal of this project was to allow a user to intuitively query the database for patients similar to a given patient; we want to avoid forcing the user to use a specific query format, but so far we had only a system that accpeted an explicit subject ID. If found, we used that patient's vector to search for nearest neighbors. For use cases like "Find patients similar to patient 19", this worked well, but for any query more complex than that, it was clear that we needed to use a more sophisticated approach.
+For the authors, this was the stage where their understanding of the RAG pipeline and the retrieval strategy became more concrete. The goal of this project was to allow a user to intuitively query the database for patients similar to a given patient; we want to avoid forcing the user to use a specific query format, but so far we had only a system that accepted an explicit subject ID. If found, we used that patient's vector to search for nearest neighbors. For use cases like "Find patients similar to patient 19", this worked well, but for any query more complex than that, it was clear that we needed to use a more sophisticated approach.
 
 \subsubsection{Learning about the Modality Gap the Hard Way}
 
@@ -200,11 +200,11 @@ We quickly discovered that there is a well-known challenge referred to as the "M
 But the initial implementation of our patient retrieval simply embedded the query with the clinical BERT embedding model and produced a $768$-dimension vector. So, we could not actually effectively utilize the extra $426$-dimensions we had added from the structured features. The query embedding was suited only for searching the space of the discharge summary embeddings; padding the query embeddings with zeros would introduce a large amount of noise. We wanted a tool that could leverage the tabular data as well as the text data, since the structured data had important signals that we expected to be useful for the retrieval process.
 
 \subsubsection{Creating a Router}
-It became clear that our retrieval strategy would need to be made modular, so it could handle choosing an appropriate search strategy based on the query. We decided to incorporate the LLM as a prestep to the retrieval process, to handle the query in a more flexible way. We effectively used the LLM as a routing layer, to guide the retrieval process based on the intent of the query. 
+It became clear that our retrieval strategy would need to be made modular, so it could handle choosing an appropriate search strategy based on the query. We decided to incorporate the LLM as a pre-step to the retrieval process, to handle the query in a more flexible way. We effectively used the LLM as a routing layer, to guide the retrieval process based on the intent of the query. 
 
 This, we discovered, is not an exact science; designing a robust router presented significant challenges in prompt engineering and intent classification. In evaluating our RAG we continue to find cases where either the LLM makes mistakes extracting the parameters we want or we aren't supporting intuitive use cases. Frankly, this is the piece we have continued to try to revise up until the final submission of this report. Further research, both in the field of Usability Design and in the domain of existing work on RAG systems, would be required to create an ideal router, one that could interpret the query and determine the most effective way to search the dataset, but we set out to establish a baseline that could be used to create a more sophisticated router in the future.
 
-Our modular approach first classifies user intent based on the query. If the query includes a subject ID, we treat the query as a specific user lookup and use the multimodal patient vector to search for nearest neighbors. If the query does not include a subject ID, we extract structured parameters from the query. For any features found in the query, the search space is filtered to only include patients that match the query parameters. To accomplish the search space filtering, we wrote a function that forms a prompt for the LLM, directing it to extract a set of parameters from the query and return them in JSON format.
+Our modular approach first classifies user intent based on the query. If the query includes a subject ID, we treat the query as a specific user lookup and use the multi-modal patient vector to search for nearest neighbors. If the query does not include a subject ID, we extract structured parameters from the query. For any features found in the query, the search space is filtered to only include patients that match the query parameters. To accomplish the search space filtering, we wrote a function that forms a prompt for the LLM, directing it to extract a set of parameters from the query and return them in JSON format.
 
 \begin{lstlisting}
   Extract structured filters from this patient search query. Return ONLY valid JSON.
@@ -225,35 +225,108 @@ Our modular approach first classifies user intent based on the query. If the que
   ... # truncated
 \end{lstlisting}
 
-Once the router has identified the search space most appropriate to address the query's intent, we embed the query and search the filtered space using only the embeddings from the discharge summaries. These queries would not be able to utilize the multimodal patient representations, but by reducing their search space we attempted to improve the chances of finding relevant result.
+Once the router has identified the search space most appropriate to address the query's intent, we embed the query and search the filtered space using only the embeddings from the discharge summaries. These queries would not be able to utilize the multi-modal patient representations, but by reducing their search space we attempted to improve the chances of finding relevant result.
 
 \subsection{Generative Synthesis}
 The final stage in our RAG pipeline involved feeding the Discharge Summary of the patients found in the retrieval stage to the LLM to generate a response to the query, providing a clinical explanation of why the returned patients are good matches for the query. The goal is to synthesize clinical details scattered throughout the notes text into a coherent answer, rather than just return a wall of text.
 
 Here, the LLM choice dictates constraints on the parameters used, including the context window length. Because the notes can be quite long and we were using the Mistral 7B model, we set a conservative context window length to ~22{,}000 words, based on the model's documentation \cite{obot_mistral7b_instruct}.
 
-Because we used the DGX Spark, we had access to a large amount of memory and decided to opt for percision of performance by not using 4-bit quantization.
+Because we used the DGX Spark, we had access to a large amount of memory and decided to opt for precision of performance by not using 4-bit quantization. Additionally, this environment allowed us to use larger models, such as the OpenBioLLM-70B model \cite{hf_llama3_openbiollm_70b}, which a 70 billion parameter advanced open source language model designed specifically for the biomedical domain.
 
 For the answer prompts, we provided a system role to guide the LLM's response, providing a clinical explanation of why the returned patients are good matches for the query.
 
-\begin{quote}
-  "role": "system", 
-  "content": "You are an expert medical AI. Answer based ONLY on the provided patient history. Be concise and clinically relevant. Provide insights into why the provided PATIENT HISTORY is a good match for the QUESTION."
-
-\end{quote}
+\begin{lstlisting}
+"role": "system",
+"content": (
+    "You are an expert medical AI. Given two patient histories, assess how similar they are. "
+    "Be concise and clinically grounded. Always include the following information in distinct sections:\n"
+    "- A similarity judgment (high/medium/low) and a 0-100 similarity score estimate, specifically based on whether or not the patients are similar based on ONLY the criteria in the QUESTION, not any other information.\n"
+    "- For each clinical detail mentioned in the QUESTION: state for Patient A and Patient B whether it is present (with brief evidence) or not evident. Don't include extra information in this list.\n"
+    "- Shared key problems/diagnoses, treatments, demographics.\n"
+    "- Key differences (diagnoses, acuity, comorbidities, demographics, treatments).\n"
+    "If similarity is low - again based on the criteria in the QUESTION - clearly state that they are not very similar and why."
+),
+\end{lstlisting}
 
 The prompt in the user role contained the (potentially truncated) Discharge Summary of the patients found in the retrieval stage and the query.
 
 \begin{lstlisting}
-  "role": "user", 
-  "content": "--- PATIENT HISTORY ---\n<notes>\n\nQUESTION: <query>"
+"role": "user",
+"content": (
+    f"--- PATIENT A HISTORY ---\n{ctx_a}\n\n"
+    f"--- PATIENT B HISTORY ---\n{ctx_b}\n\n"
+    f"QUESTION: {query}\n\n"
+    "Provide the comparison as:\n"
+    "Similarity: <high/medium/low> (<score>/100)\n"
+    "Query details:\n"
+    "- Patient A: per clinical QUESTION detail <present/absent per detail with brief evidence>\n"
+    "- Patient B: per clinical QUESTION detail <present/absent per detail with brief evidence>\n"
+    "Shared factors: ...\n"
+    "Differences: ...\n"
 \end{lstlisting}
 
 \section{Results}
 
-TODO: discuss tuning context window for discharge notes to address "Lost in the Middle" problem. Look more into The "Needle in a Haystack" Test
+The resulting system has aspects that are promising, but also significant limitations. We believe that there are opportunities to improve the synthesis between the retrieval and generation stages to improve the quality of the responses.
+
+We have provided excerpts from a response that is a representative example of the system's capabilities and limitations.
+
+\begin{lstlisting}
+Query: between 30 and 50, history of smoking, hypertension and diabetes
+
+Parsing query...
+   Parsed parameters:
+      Subject ID: None
+      Gender: None
+      Age range: 30 - 50
+      Ethnicity: None
+      Religion: None
+      Diagnoses: ['Hypertension', 'Diabetes mellitus without complication', 'Diabetes mellitus with complications', 'history of smoking']
+
+Strategy B: Filtered embedding search
+   Found 5984 patients matching filters
+
+Similarity analysis for top 2 matches (Patients 9749 & 20951):
+
+ANALYSIS:
+----------------------------------------
+Similarity: low (30/100)
+
+Patient A:
+- Age: not mentioned
+- Smoking history: present, smoking 12-2 ppd
+- Hypertension: present
+- Diabetes: not mentioned
+
+Patient B:
+- Age: 42
+- Smoking history: present, 10 pack year history; currently smoking
+- Hypertension: not mentioned
+- Diabetes: not mentioned
+
+Shared factors: smoking history
+Differences: age, presence of hypertension and diabetes
+Overall judgment: The patients are not very similar based on the criteria in the QUESTION. Patient A has hypertension and an unspecified age, while Patient B is 42 years old and does not have hypertension. Both patients have a history of smoking. The differences in age and comorbidities such as hypertension and diabetes make them less similar.
+\end{lstlisting}
+
+The application can currently handle routing to the correct retrieval strategy (``correct'', as defined by the authors) and it succeeds at performing filtered retrieval appropriately, based on the extracted features. This has the desired effect of reducing the search space to only patients that match the query parameters, though the feature extraction is not perfect. As demonstrated in this example, the application does provide an explanation for how well the provided patients match the query parameters, but this is where we have identified opportunities to improve the accuracy and usefulness of the output.
+
+\subsection{Future Work}
+
+\subsubsection{Improving the Feature Extraction}
+The feature extraction with the OpenBioLLM-70B model is noticeably better than with Mistral 7B, but it is sometimes too generous in the features that it extracts (e.g. diagnosis of ``history of smoking''). We have already made improvements by making adjustments to the prompt, but there is still opportunity to make it more accurate.
+
+\subsubsection{Relevant Details from Search Strategy missing from the Generation}
+The example above illustrates scenarios where information related to the patient, such as diagnoses or age, is not present in the truncated discharge summary notes provided to the LLM for analysis. The next steps include investigating existing strategies for providing relevant information from notes without exceeding the model's context window. The current truncation approach is too simplistic. Alternatives proposed include generating a "patient profile" from the structured features to include with the notes in the prompt. This should ensure that none of the details extracted from the query and filtered-upon are missing from the generation step.
 
 \section{Conclusion}
+
+Clinicians routinely rely on experience and intuition to guide their decisions about patient care. Our aim in this project was to explore whether a RAG system could extend that mode of thinking to large-scale clinical datasets, such as MIMIC-III. By constructing a multi-modal patient representation, combining structured demographics and diagnoses with Clinical BERT embeddings of discharge summaries and embedding both data and queries, we built a system that attempts to surface clinically similar patients in response to natural language queries. The result is an early prototype that demonstrates both the promise and the complexity of making patient-level evidence discoverable by intuitive, conversational means.
+
+Our findings highlight several successes. The hybrid retrieval routing strategy allowed us to adapt to diverse query types. Filtered search reduced irrelevant results enabling the generative model to produce clinical comparisons. The embedding workflow proved scalable and the multi-modal patient vectors provide a foundation for more sophisticated retrieval algorithms. The project also exposed key challenges. The modality gap limited the usefulness of combining structured and unstructured representations directly. The router, while functional, remains brittle to subtle variations in phrasing, limiting its usefulness for the intended use cases. And the generative step often lacked crucial clinical details because of context-window constraints, revealing a broader need for tighter integration between retrieval and synthesis.
+
+Ultimately, this work shows that creating an intuitive patient-similarity search tool is feasible, but making it clinically useful requires further refinement. Future iterations will need more robust feature extraction, improved linkage between structured features and generative reasoning, and methods for preserving relevant patient details without overwhelming the model. Still, the system presented here offers a step toward making rich clinical datasets accessible in the same way clinicians access their own experience: by asking simple, natural questions and receiving explanations grounded in patient-level evidence.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
