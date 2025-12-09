@@ -8,7 +8,7 @@ import re
 import json
 import torch
 
-from .config import DEVICE
+from .models import get_llm_device
 
 
 def parse_query(query, models, ccs_descriptions):
@@ -81,12 +81,14 @@ JSON response:"""
     
     # this runs the messages through the LLM's chat template using the
     # tokenizer, creating input_ids suitable for model input (as a tensor)
+    # use get_llm_device to handle models with device_map='auto'
+    llm_device = get_llm_device(models)
     input_ids = models['llm_tokenizer'].apply_chat_template(
         messages,
         tokenize=True,
         add_generation_prompt=True,
         return_tensors="pt"
-    ).to(DEVICE)
+    ).to(llm_device)
     
     attention_mask = torch.ones_like(input_ids)
     

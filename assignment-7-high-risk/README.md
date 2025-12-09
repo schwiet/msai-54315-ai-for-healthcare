@@ -1,5 +1,172 @@
 # README
 
+## How the dataset is assembled with these scripts
+
+Because the stages were run in different environments, they are not included in a single notebook.
+
+### note-event-embedding.py
+- Run inside Docker container on DGX Spark
+- Script (`note-events-embeddings.py`) reads `NOTEEVENTS.csv.gz` in 10k-row chunks, filters to `Discharge summary`, and concatenates all notes per `SUBJECT_ID` into a single timeline string.
+- Uses `emilyalsentzer/Bio_ClinicalBERT` (GPU if available) to chunk long texts into 512-token windows with overlap, average the CLS vectors, and produce one embedding per patient.
+
+### ingest-and-feature-engineering.py
+- Loads `PATIENTS.csv.gz` + `ADMISSIONS.csv.gz`, parses dates, merges demographics, handles HIPAA age shifting (DOB < 2000 reset; ages >200 capped at 90), fills missing language/marital/religion, collapses Christian denominations into `CHRISTIAN`, and one-hot encodes categorical fields.
+- Maps ICD-9 diagnoses (`DIAGNOSES_ICD.csv.gz` + CCS crosswalk) into CCS categories, builds per-patient diagnosis frequency tables, and aggregates admission features per patient (max of one-hots, min/max age, admission count).
+- Merges structured features with `patient_embeddings.csv`, scales age/admission-count, L2-normalizes BERT vectors, concatenates into a multimodal matrix, and fits a cosine `NearestNeighbors` model for similarity search.
+- Saves artifacts for RAG/search: `multimodal_vectors.csv`, `structured_features.csv`, and `multimodal_metadata.json` (split index, structured column list, total feature count).
+
+## Example Results
+
+```
+🔎 SEARCH: patients at least 90 years old who live alone, have suffered a fall and had surgery
+
+============================================================
+📥 Query: patients at least 90 years old who live alone, have suffered a fall and had surgery
+============================================================
+
+🧠 Parsing query...
+The following generation flags are not valid and may be ignored: ['temperature']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+   Parsed parameters:
+      Subject ID: None
+      Gender: None
+      Age range: 90 - None
+      Ethnicity: None
+      Religion: None
+      Diagnoses: ['Falls', 'Surgery']
+
+🔍 Strategy B: Filtered embedding search
+      Age >= 90: 1935 patients
+   Found 1935 patients matching filters
+
+📊 Search Results (filtered):
+----------------------------------------
+   #1: Patient 53131 (Similarity: 72.4%)
+   #2: Patient 90740 (Similarity: 72.4%)
+   #3: Patient 41983 (Similarity: 72.0%)
+   #4: Patient 43787 (Similarity: 72.0%)
+   #5: Patient 93483 (Similarity: 71.9%)
+
+🧮 Similarity analysis for top 2 matches (Patients 53131 & 90740):
+
+📝 ANALYSIS:
+----------------------------------------
+Similarity: low (10/100)
+
+Query details:
+- Patient A: age over 90, lived alone, suffered a fall, underwent surgery for jaundice and gallstones with a history of AAA repair, iliac stenting, CVA, and bladder cancer.
+- Patient B: age over 90, lived alone, suffered a fall, underwent surgery for multiple injuries with a history of HTN, GI bleeds, kidney stones, PE, and a known 7.5cm AAA.
+
+Shared factors: neither patient had known drug allergies or smoked.
+
+Differences:
+- Patient A was admitted for observation following ERCP with biliary stenting and sphincterotomy due to jaundice and gallstones, while Patient B was admitted for extensive internal injuries from a fall and underwent multiple chest tube placements.
+- Patient A had a history of AAA repair, iliac stenting, CVA, and bladder cancer, while Patient B had a history of HTN, GI bleeds, kidney stones,
+----------------------------------------
+```
+
+```
+🔎 SEARCH: male patients between 30 and 40 years of age with hypertension and a history of smoking
+
+============================================================
+📥 Query: male patients between 30 and 40 years of age with hypertension and a history of smoking
+============================================================
+
+🧠 Parsing query...
+   Parsed parameters:
+      Subject ID: None
+      Gender: M
+      Age range: 30 - 40
+      Ethnicity: None
+      Religion: None
+      Diagnoses: ['Hypertension', 'History of smoking', "Hd/nck cancr - Non-epith ca (for example, if we assume that 'history of smoking' is a diagnosis related to head and neck cancer)"]
+
+🔍 Strategy B: Filtered embedding search
+      Gender filter (M): 23199 patients
+      Age >= 30: 20027 patients
+      Age <= 40: 1129 patients
+   Found 1129 patients matching filters
+
+📊 Search Results (filtered):
+----------------------------------------
+   #1: Patient 91550 (Similarity: 64.7%)
+   #2: Patient 23188 (Similarity: 64.5%)
+   #3: Patient 58672 (Similarity: 64.2%)
+   #4: Patient 18449 (Similarity: 64.1%)
+   #5: Patient 4870 (Similarity: 64.0%)
+
+🧮 Similarity analysis for top 2 matches (Patients 91550 & 23188):
+
+📝 ANALYSIS:
+----------------------------------------
+Similarity: low (10)
+
+Query details:
+- Patient A: hypertension (present), smoking history (not evident), motor vehicle accident (present)
+- Patient B: hypertension (present), smoking history (present), alcohol intoxication (present)
+
+Shared factors: both patients are males between 30 and 40 years of age and have a history of hypertension.
+
+Differences:
+- Patient A: sustained injuries from a motor vehicle accident, no mention of alcohol intake or substance abuse, no psychiatric or mental health issues
+- Patient B: admitted for alcohol intoxication, history of mood disorders and alcohol abuse, underwent psychiatric consultation and recommended for inpatient substance abuse treatment.
+
+Overall judgment: while both patients share the factors of being male, between 30 and 40 years of age, and having a history of hypertension, the two cases are not very similar as Patient A's presentation is related to a motor vehicle accident and Patient B's is related to alcohol intoxication and substance abuse.
+----------------------------------------
+```
+
+```
+🔎 SEARCH: between 30 and 50, history of smoking, hypertension and diabetes
+
+============================================================
+📥 Query: between 30 and 50, history of smoking, hypertension and diabetes
+============================================================
+
+🧠 Parsing query...
+   Parsed parameters:
+      Subject ID: None
+      Gender: None
+      Age range: 30 - 50
+      Ethnicity: None
+      Religion: None
+      Diagnoses: ['Hypertension', 'Diabetes mellitus without complication', 'Diabetes mellitus with complications', 'history of smoking']
+
+🔍 Strategy B: Filtered embedding search
+      Age >= 30: 35482 patients
+      Age <= 50: 5984 patients
+   Found 5984 patients matching filters
+
+📊 Search Results (filtered):
+----------------------------------------
+   #1: Patient 9749 (Similarity: 75.1%)
+   #2: Patient 20951 (Similarity: 75.0%)
+   #3: Patient 93893 (Similarity: 74.3%)
+   #4: Patient 60807 (Similarity: 74.3%)
+   #5: Patient 71527 (Similarity: 74.2%)
+
+🧮 Similarity analysis for top 2 matches (Patients 9749 & 20951):
+
+📝 ANALYSIS:
+----------------------------------------
+Similarity: low (30/100)
+
+Patient A:
+- Age: not mentioned
+- Smoking history: present, smoking 12-2 ppd
+- Hypertension: present
+- Diabetes: not mentioned
+
+Patient B:
+- Age: 42
+- Smoking history: present, 10 pack year history; currently smoking
+- Hypertension: not mentioned
+- Diabetes: not mentioned
+
+Shared factors: smoking history
+Differences: age, presence of hypertension and diabetes
+Overall judgment: The patients are not very similar based on the criteria in the QUESTION. Patient A has hypertension and an unspecified age, while Patient B is 42 years old and does not have hypertension. Both patients have a history of smoking. The differences in age and comorbidities such as hypertension and diabetes make them less similar.
+----------------------------------------
+```
+
 ## Python Kernel when running remotely
 
 In VS Code, if running remotely and the environment from `.venv` is not selectable with the Jupyter extension, select it manually via **"Python: Select Interpreter"**

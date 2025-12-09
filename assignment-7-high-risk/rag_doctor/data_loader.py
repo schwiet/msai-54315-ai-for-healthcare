@@ -14,40 +14,48 @@ def load_data():
     print(f"🧑‍⚕️ Initializing Enhanced RAG Doctor on {DEVICE}...")
     
     data = {}
-    
+    progress_started = False
+
+    def _announce(item):
+        nonlocal progress_started
+        prefix = "   📄 Loading: " if not progress_started else ", "
+        print(f"{prefix}{item}", end="", flush=True)
+        progress_started = True
+
     # load patient embeddings (text-only vectors)
-    print("   📄 Loading patient embeddings...")
+    _announce("patient_embeddings.csv")
     embeddings_path = os.path.join(DATA_DIR, "patient_embeddings.csv")
     if not os.path.exists(embeddings_path):
         raise FileNotFoundError(f"Could not find {embeddings_path}! Run note-events-embeddings.py first.")
     data['embeddings'] = pd.read_csv(embeddings_path)
     
     # load multi-modal vectors if available
+    _announce("multimodal_vectors.csv")
     multimodal_path = os.path.join(DATA_DIR, "multimodal_vectors.csv")
     if os.path.exists(multimodal_path):
-        print("   🔮 Loading multi-modal vectors...")
         data['multimodal'] = pd.read_csv(multimodal_path)
     else:
-        print("   ⚠️  Multi-modal vectors not found. Run main.py to generate them.")
         data['multimodal'] = None
     
     # load structured features for filtering
+    _announce("structured_features.csv")
     structured_path = os.path.join(DATA_DIR, "structured_features.csv")
     if os.path.exists(structured_path):
-        print("   📊 Loading structured features...")
         data['structured'] = pd.read_csv(structured_path)
     else:
         data['structured'] = None
     
     # load raw MIMIC-III tables for filtering
-    print("   📋 Loading MIMIC-III tables...")
+    _announce("PATIENTS.csv.gz")
     data['patients'] = pd.read_csv(os.path.join(DATA_DIR, "PATIENTS.csv.gz"))
+    _announce("ADMISSIONS.csv.gz")
     data['admissions'] = pd.read_csv(os.path.join(DATA_DIR, "ADMISSIONS.csv.gz"))
+    _announce("DIAGNOSES_ICD.csv.gz")
     data['diagnoses'] = pd.read_csv(os.path.join(DATA_DIR, "DIAGNOSES_ICD.csv.gz"))
     
     # load CCS crosswalk for diagnosis mapping
     if os.path.exists(CCS_CROSSWALK_PATH):
-        print("   🏥 Loading CCS diagnosis crosswalk...")
+        _announce("CCS crosswalk")
         ccs_crosswalk = pd.read_csv(CCS_CROSSWALK_PATH, skiprows=1)
         # clean up the columns
         ccs_map = ccs_crosswalk[[
@@ -66,6 +74,10 @@ def load_data():
     else:
         data['ccs_map'] = None
         data['ccs_descriptions'] = []
+    
+    # finish the progress line
+    if progress_started:
+        print()
     
     # load clinical notes text
     print("   📝 Reading clinical notes (this may take a moment)...")

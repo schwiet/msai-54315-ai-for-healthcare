@@ -16,6 +16,7 @@ from rag_doctor import (
     search_all_embeddings,
     get_patient_text,
     generate_answer,
+    compare_patients,
 )
 
 
@@ -27,7 +28,7 @@ def run_rag_query(query, data, indices, models):
     print(f"📥 Query: {query}")
     print("="*60)
     
-    # Step 1: Parse the query
+    # parse the query
     print("\n🧠 Parsing query...")
     parsed = parse_query(query, models, data.get('ccs_descriptions', []))
     
@@ -86,11 +87,36 @@ def run_rag_query(query, data, indices, models):
     for r in results:
         print(f"   #{r['rank']}: Patient {r['subject_id']} (Similarity: {r['similarity']:.1f}%)")
     
-    # Step 4: Generate answer using top match
+    # Step 4: Generate answer / similarity analysis
     top_match = results[0]
     patient_text = get_patient_text(top_match['subject_id'], indices)
-    
-    if patient_text:
+
+    # If the user provided a subject_id, compare THAT patient to the top result
+    if parsed['subject_id']:
+        anchor_text = get_patient_text(parsed['subject_id'], indices)
+        if anchor_text and patient_text:
+            print(f"\n🧮 Similarity analysis: Provided patient {parsed['subject_id']} vs top match {top_match['subject_id']}")
+            pair_answer = compare_patients(anchor_text, patient_text, parsed['raw_query'], models)
+            print("\n📝 ANALYSIS:")
+            print("-" * 40)
+            print(pair_answer)
+            print("-" * 40)
+            return
+        # If we cannot fetch anchor notes, fall back to regular flow
+
+    # If no subject_id path (or fallback), and we have two matches with notes, compare them
+    second_text = None
+    if len(results) > 1:
+        second_text = get_patient_text(results[1]['subject_id'], indices)
+
+    if patient_text and second_text:
+        print(f"\n🧮 Similarity analysis for top 2 matches (Patients {top_match['subject_id']} & {results[1]['subject_id']}):")
+        pair_answer = compare_patients(patient_text, second_text, parsed['raw_query'], models)
+        print("\n📝 ANALYSIS:")
+        print("-" * 40)
+        print(pair_answer)
+        print("-" * 40)
+    elif patient_text:
         print(f"\n💬 Generating analysis for Patient {top_match['subject_id']}...")
         answer = generate_answer(parsed['raw_query'], patient_text, models)
         

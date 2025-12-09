@@ -9,11 +9,11 @@ This package provides intelligent patient search using:
 
 from .config import DEVICE, MODEL_ID, DATA_DIR
 from .data_loader import load_data, build_indices
-from .models import load_models, get_query_embedding
+from .models import load_models, get_query_embedding, get_llm_device
 from .query_parser import parse_query
 from .filters import get_filtered_patient_ids
 from .search import search_by_subject_id, search_filtered_embeddings, search_all_embeddings
-from .generator import get_patient_text, generate_answer
+from .generator import get_patient_text, generate_answer, compare_patients
 
 __all__ = [
     # Config
@@ -26,6 +26,7 @@ __all__ = [
     # Models
     'load_models',
     'get_query_embedding',
+    'get_llm_device',
     # Query parsing
     'parse_query',
     # Filtering
@@ -37,5 +38,6 @@ __all__ = [
     # Generation
     'get_patient_text',
     'generate_answer',
+    'compare_patients',
 ]
 
